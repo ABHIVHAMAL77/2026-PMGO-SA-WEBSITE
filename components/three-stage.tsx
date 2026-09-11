@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
-const trophyModelPath = '/trophy-blend.bin';
+const trophyModelPath = '/trophy-blend-fast.bin';
 const trophyTexturePath = '/trophy-glass-texture.png?v=no-text';
 const trophyMagic = [80, 77, 71, 79, 66, 76, 68, 49];
 
@@ -75,9 +75,9 @@ export function ThreeStage() {
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true,
-      preserveDrawingBuffer: true,
+      preserveDrawingBuffer: false,
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -304,7 +304,7 @@ export function ThreeStage() {
       positionHeroObjects();
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
 

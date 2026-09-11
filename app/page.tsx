@@ -11,17 +11,17 @@ import {
 } from 'lucide-react';
 
 import { FallbackImage } from '@/components/fallback-image';
+import { LazyThreeStage } from '@/components/lazy-three-stage';
 import { MediaApplicationForm } from '@/components/media-application-form';
 import { TicketCheckout } from '@/components/ticket-checkout';
-import { ThreeStage } from '@/components/three-stage';
 import { ticketPlans } from '@/lib/tickets';
 
 const assets = {
-  arenaWide: '/kv-bg-wide.jpg',
-  eventLockup: '/event-title-lockup.png',
-  fullKv: '/pmgo-sa-fall-kv.jpg',
-  kvPlayersWide: '/kv-players-wide.jpg',
-  playerLeft: '/player-left.png',
+  arenaWide: '/kv-bg-wide.webp',
+  eventLockup: '/event-title-lockup.webp',
+  fullKv: '/pmgo-sa-fall-kv.webp',
+  kvPlayersWide: '/kv-players-wide.webp',
+  playerLeft: '/player-left.webp',
   pmgoLogo: '/pmgo-finals-logo-white.png',
   pubgLogo: '/pubg-mobile-esports-white.png',
   esportsCounty: '/esports-county-black.png',
@@ -352,7 +352,7 @@ const rosterStats = [
 export default function Home() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#050a16] text-white">
-      <ThreeStage />
+      <LazyThreeStage />
 
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#050912]/78 backdrop-blur-xl">
         <nav className="mx-auto flex h-16 max-w-[1500px] items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -415,6 +415,8 @@ export default function Home() {
           alt="PMGO South Asia Finals key visual arena in Nepal with red arches and a central tower."
           className="hero-kv-pan absolute inset-0 h-full w-full object-cover object-center"
           data-qa="hero-kv"
+          fetchPriority="high"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,18,0.68)_0%,rgba(3,7,18,0.08)_45%,rgba(3,7,18,0.58)_100%),linear-gradient(0deg,rgba(3,7,18,0.92)_0%,rgba(3,7,18,0.06)_52%,rgba(3,7,18,0.26)_100%)]" />
         <div
@@ -426,6 +428,8 @@ export default function Home() {
           alt=""
           className="runner-motion absolute -bottom-14 -left-44 z-[6] hidden h-[82vh] max-h-[860px] w-auto object-contain opacity-95 drop-shadow-[0_32px_86px_rgba(0,0,0,0.62)] lg:block"
           aria-hidden="true"
+          loading="eager"
+          decoding="async"
         />
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-4 pb-6 sm:pb-8 lg:pb-10">
@@ -435,6 +439,8 @@ export default function Home() {
               alt="2026 PMGO S2 South Asia Finals"
               className="w-[min(880px,92vw)] object-contain drop-shadow-[0_18px_58px_rgba(0,0,0,0.58)]"
               data-qa="hero-lockup"
+              loading="eager"
+              decoding="async"
             />
             <div className="mt-4 grid w-full max-w-5xl grid-cols-2 gap-px overflow-hidden rounded-md border border-white/12 bg-white/12 backdrop-blur-xl lg:grid-cols-4">
               {heroFacts.map(([value, label]) => (
@@ -490,6 +496,8 @@ export default function Home() {
           alt=""
           className="absolute inset-0 h-full w-full object-cover object-center opacity-18"
           aria-hidden="true"
+          loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,22,0.98)_0%,rgba(5,10,22,0.9)_58%,rgba(5,10,22,0.72)_100%)]" />
         <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
@@ -546,6 +554,8 @@ export default function Home() {
           alt=""
           className="absolute inset-0 h-full w-full object-cover object-center opacity-14"
           aria-hidden="true"
+          loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,13,28,0.98)_0%,rgba(7,13,28,0.91)_48%,rgba(7,13,28,0.84)_100%)]" />
         <div className="relative mx-auto max-w-7xl">
@@ -742,6 +752,8 @@ export default function Home() {
           alt=""
           className="absolute inset-0 h-full w-full object-cover object-center opacity-16"
           aria-hidden="true"
+          loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,10,22,0.98)_0%,rgba(5,10,22,0.88)_54%,rgba(5,10,22,0.76)_100%)]" />
         <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.86fr_1.14fr] lg:items-start">

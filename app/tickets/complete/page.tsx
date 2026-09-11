@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { KhaltiReturnStatus } from '@/components/khalti-return-status';
 
 const assets = {
-  arenaWide: '/kv-bg-wide.jpg',
+  arenaWide: '/kv-bg-wide.webp',
   pmgoLogo: '/pmgo-finals-logo-white.png',
   pubgLogo: '/pubg-mobile-esports-white.png',
 };
@@ -17,6 +17,8 @@ export default function TicketCompletePage() {
         alt=""
         className="absolute inset-0 h-full w-full object-cover object-center opacity-28"
         aria-hidden="true"
+        loading="eager"
+        decoding="async"
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,18,0.9)_0%,rgba(3,7,18,0.66)_48%,rgba(3,7,18,0.9)_100%),linear-gradient(0deg,rgba(3,7,18,0.95)_0%,rgba(3,7,18,0.35)_52%,rgba(3,7,18,0.78)_100%)]" />
 
