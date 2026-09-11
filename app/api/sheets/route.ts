@@ -77,11 +77,18 @@ export async function POST(request: Request) {
         { status: 503 },
       );
     }
-  } catch {
+  } catch (error) {
+    console.error(
+      'Media application sheet save failed:',
+      error instanceof Error ? error.message : error,
+    );
+
     return Response.json(
       {
         error:
-          'The application could not be saved right now. Please try again.',
+          error instanceof Error
+            ? error.message
+            : 'The application could not be saved right now. Please try again.',
       },
       { status: 502 },
     );
