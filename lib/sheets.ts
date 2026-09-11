@@ -32,5 +32,14 @@ export async function sendSheetRecord({ payload, type }: SheetRecordInput) {
     throw new Error('Sheet webhook rejected the request.');
   }
 
+  const result = (await response.json().catch(() => null)) as {
+    error?: string;
+    ok?: boolean;
+  } | null;
+
+  if (!result?.ok) {
+    throw new Error(result?.error ?? 'Sheet webhook did not confirm the save.');
+  }
+
   return { skipped: false };
 }
