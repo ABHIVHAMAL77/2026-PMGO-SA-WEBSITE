@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { cn } from '@/lib/utils';
 import type { TicketPlan } from '@/lib/tickets';
 
@@ -301,27 +300,35 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
         </div>
 
         <div className="mt-5">
-          <Label
-            htmlFor="ticket-date"
-            className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70"
-          >
+          <Label className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70">
             Event date
           </Label>
-          <NativeSelect
-            id="ticket-date"
-            value={selectedDate}
-            onChange={(event) => {
-              setSelectedDate(event.currentTarget.value);
-              setError('');
-            }}
-            className="mt-2 w-full [&_select]:h-12 [&_select]:rounded-md [&_select]:border-white/14 [&_select]:bg-white/[0.07] [&_select]:px-4 [&_select]:pr-10 [&_select]:font-bold [&_select]:text-white [&_select]:focus-visible:border-cyan-200"
+          <div
+            className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4"
+            role="radiogroup"
+            aria-label="Choose event date"
           >
             {eventDates.map((date) => (
-              <NativeSelectOption key={date.value} value={date.value}>
+              <button
+                key={date.value}
+                type="button"
+                role="radio"
+                aria-checked={selectedDate === date.value}
+                onClick={() => {
+                  setSelectedDate(date.value);
+                  setError('');
+                }}
+                className={cn(
+                  'min-h-12 rounded-md border px-3 text-sm font-black uppercase tracking-[0.06em] transition',
+                  selectedDate === date.value
+                    ? 'border-cyan-200 bg-cyan-200 text-[#071123] shadow-[0_14px_36px_rgba(34,211,238,0.2)]'
+                    : 'border-white/14 bg-white/[0.07] text-white hover:border-cyan-100/70 hover:bg-white/[0.1]',
+                )}
+              >
                 {date.label}
-              </NativeSelectOption>
+              </button>
             ))}
-          </NativeSelect>
+          </div>
         </div>
 
         <div className="mt-5">
