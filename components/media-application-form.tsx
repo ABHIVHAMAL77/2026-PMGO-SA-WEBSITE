@@ -90,9 +90,11 @@ export function MediaApplicationForm() {
 
   const updateField =
     (field: keyof FormValues) => (event: ChangeEvent<HTMLInputElement>) => {
+      const { value } = event.currentTarget;
+
       setValues((current) => ({
         ...current,
-        [field]: event.currentTarget.value,
+        [field]: value,
       }));
       setSubmitted(false);
       setError('');
