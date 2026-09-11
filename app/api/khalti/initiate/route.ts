@@ -1,4 +1,5 @@
 import { getTicketPlan } from '@/lib/tickets';
+import { sendSheetRecord } from '@/lib/sheets';
 
 type KhaltiCustomer = {
   email?: string;
@@ -144,6 +145,23 @@ export async function POST(request: Request) {
       { status: 502 },
     );
   }
+
+  await sendSheetRecord({
+    payload: {
+      amountNpr: ticket.amountNpr * quantity,
+      buyerEmail: customerEmail,
+      buyerName: customerName,
+      buyerPhone: customerPhone,
+      event: 'Checkout Started',
+      orderId,
+      pidx: payload.pidx ?? '',
+      quantity,
+      status: 'Pending',
+      ticketId: ticket.id,
+      ticketName: ticket.name,
+    },
+    type: 'ticket',
+  }).catch(() => null);
 
   return Response.json({
     paymentUrl: payload.payment_url,

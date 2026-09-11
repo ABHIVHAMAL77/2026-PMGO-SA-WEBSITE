@@ -1,7 +1,7 @@
 'use client';
 
-import { ChangeEvent, SyntheticEvent, useMemo, useState } from 'react';
-import { Send } from 'lucide-react';
+import { ChangeEvent, SyntheticEvent, useState } from 'react';
+import { Loader2, Send } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,25 +85,8 @@ const fields: Array<{
 export function MediaApplicationForm() {
   const [values, setValues] = useState<FormValues>(initialValues);
   const [submitted, setSubmitted] = useState(false);
-
-  const mailtoHref = useMemo(() => {
-    const body = [
-      'PMGO SA Fall Media Partner Application',
-      '',
-      `Full name: ${values.fullName}`,
-      `National ID: ${values.nationalId}`,
-      `Gmail: ${values.gmail}`,
-      `WhatsApp: ${values.whatsapp}`,
-      `YouTube: ${values.youtube}`,
-      `TikTok: ${values.tiktok}`,
-      `Instagram: ${values.instagram}`,
-    ].join('\n');
-
-    const subject = encodeURIComponent(
-      'PMGO SA Fall Media Partner Application',
-    );
-    return `mailto:abhiv@esportscounty.com?subject=${subject}&body=${encodeURIComponent(body)}`;
-  }, [values]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const updateField =
     (field: keyof FormValues) => (event: ChangeEvent<HTMLInputElement>) => {
@@ -112,12 +95,47 @@ export function MediaApplicationForm() {
         [field]: event.currentTarget.value,
       }));
       setSubmitted(false);
+      setError('');
     };
 
-  const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitted(true);
-    window.location.href = mailtoHref;
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/sheets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          payload: values,
+          type: 'media',
+        }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ?? 'Application could not be submitted right now.',
+        );
+      }
+
+      setSubmitted(true);
+      setValues(initialValues);
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'Application could not be submitted right now.',
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -155,19 +173,28 @@ export function MediaApplicationForm() {
 
       <Button
         type="submit"
+        disabled={loading}
         className="h-12 w-full rounded-md bg-red-500 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-red-400"
       >
-        <Send className="size-4" aria-hidden="true" />
-        Apply for Media Partner
+        {loading ? (
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+        ) : (
+          <Send className="size-4" aria-hidden="true" />
+        )}
+        {loading ? 'Submitting' : 'Apply for Media Partner'}
       </Button>
 
       <p className="text-sm leading-6 text-slate-400">
-        Your email app will open with the application details addressed to the
-        PMGO SA Fall event team.
+        Applications are saved directly for the PMGO SA Fall event team.
       </p>
+      {error && (
+        <p className="rounded-md border border-red-300/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100">
+          {error}
+        </p>
+      )}
       {submitted && (
         <p className="rounded-md border border-cyan-200/20 bg-cyan-200/10 px-3 py-2 text-sm font-semibold text-cyan-100">
-          Email draft prepared for the event team.
+          Application submitted. The team will review it soon.
         </p>
       )}
     </form>

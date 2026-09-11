@@ -1,3 +1,5 @@
+import { sendSheetRecord } from '@/lib/sheets';
+
 type LookupRequestBody = {
   pidx?: string;
 };
@@ -74,6 +76,25 @@ export async function POST(request: Request) {
       { status: 502 },
     );
   }
+
+  await sendSheetRecord({
+    payload: {
+      amountNpr:
+        typeof payload.total_amount === 'number'
+          ? payload.total_amount / 100
+          : '',
+      event: 'Payment Lookup',
+      khaltiMobile: typeof payload.mobile === 'string' ? payload.mobile : '',
+      pidx: typeof payload.pidx === 'string' ? payload.pidx : pidx,
+      refunded: typeof payload.refunded === 'boolean' ? payload.refunded : '',
+      status: typeof payload.status === 'string' ? payload.status : '',
+      transactionId:
+        typeof payload.transaction_id === 'string'
+          ? payload.transaction_id
+          : '',
+    },
+    type: 'ticket',
+  }).catch(() => null);
 
   return Response.json({
     amount: payload.total_amount,
