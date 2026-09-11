@@ -17,8 +17,8 @@ import { cn } from '@/lib/utils';
 import type { TicketPlan } from '@/lib/tickets';
 
 type BuyerDetails = {
-  name: string;
   email: string;
+  name: string;
   phone: string;
 };
 
@@ -28,8 +28,8 @@ type CheckoutResponse = {
 };
 
 const initialBuyer: BuyerDetails = {
-  name: '',
   email: '',
+  name: '',
   phone: '',
 };
 
@@ -42,35 +42,57 @@ const eventDates = [
 
 const clampQuantity = (value: number) => Math.min(10, Math.max(1, value));
 
+const createEmptyAttendees = (count: number) =>
+  Array.from({ length: count }, () => ({ ...initialBuyer }));
+
 export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
   const [selectedDate, setSelectedDate] = useState(eventDates[0].value);
   const [quantity, setQuantity] = useState(1);
-  const [buyer, setBuyer] = useState<BuyerDetails>(initialBuyer);
+  const [attendees, setAttendees] = useState<BuyerDetails[]>(
+    createEmptyAttendees(1),
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const selectedTicket = tickets[0];
-  const total = selectedTicket ? selectedTicket.amountNpr * quantity : 0;
+  const baseTotal = selectedTicket ? selectedTicket.amountNpr * quantity : 0;
+  const vatTotal = selectedTicket
+    ? Math.round(baseTotal * selectedTicket.vatRate)
+    : 0;
+  const total = baseTotal + vatTotal;
   const selectedDateLabel = eventDates.find(
     (date) => date.value === selectedDate,
   )?.label;
 
-  const updateBuyer =
-    (field: keyof BuyerDetails) => (event: ChangeEvent<HTMLInputElement>) => {
+  const updateAttendee =
+    (index: number, field: keyof BuyerDetails) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
       const { value } = event.currentTarget;
 
-      setBuyer((current) => ({
-        ...current,
-        [field]: value,
-      }));
+      setAttendees((current) =>
+        current.map((attendee, attendeeIndex) =>
+          attendeeIndex === index ? { ...attendee, [field]: value } : attendee,
+        ),
+      );
       setError('');
     };
+
+  const updateQuantity = (nextQuantity: number) => {
+    const next = clampQuantity(nextQuantity);
+    setQuantity(next);
+    setAttendees((current) =>
+      Array.from(
+        { length: next },
+        (_, index) => current[index] ?? initialBuyer,
+      ),
+    );
+    setError('');
+  };
 
   const handleQuantityInput = (event: ChangeEvent<HTMLInputElement>) => {
     const { value } = event.currentTarget;
 
-    setQuantity(clampQuantity(Number(value) || 1));
-    setError('');
+    updateQuantity(Number(value) || 1);
   };
 
   const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
@@ -91,7 +113,7 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          customer: buyer,
+          attendees,
           eventDate: selectedDate,
           eventDateLabel: selectedDateLabel,
           quantity,
@@ -148,7 +170,7 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
               NPR 400
             </p>
             <p className="mt-2 text-sm font-black uppercase tracking-[0.14em] text-cyan-100/62">
-              Per selected day
+              + 13% VAT per ticket
             </p>
           </div>
 
@@ -206,68 +228,10 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
               <p className="text-2xl font-black">
                 NPR {total.toLocaleString('en-US')}
               </p>
+              <p className="text-xs font-black uppercase tracking-[0.08em] opacity-70">
+                Incl. NPR {vatTotal.toLocaleString('en-US')} VAT
+              </p>
             </div>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <div>
-            <Label
-              htmlFor="ticket-name"
-              className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70"
-            >
-              Full name
-            </Label>
-            <Input
-              id="ticket-name"
-              name="name"
-              value={buyer.name}
-              onChange={updateBuyer('name')}
-              placeholder="Ticket buyer name"
-              autoComplete="name"
-              required
-              className="mt-2 h-12 rounded-md border-white/14 bg-white/[0.07] px-4 text-white placeholder:text-slate-500 focus-visible:border-cyan-200"
-            />
-          </div>
-
-          <div>
-            <Label
-              htmlFor="ticket-email"
-              className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70"
-            >
-              Gmail / email
-            </Label>
-            <Input
-              id="ticket-email"
-              name="email"
-              type="email"
-              value={buyer.email}
-              onChange={updateBuyer('email')}
-              placeholder="name@gmail.com"
-              autoComplete="email"
-              required
-              className="mt-2 h-12 rounded-md border-white/14 bg-white/[0.07] px-4 text-white placeholder:text-slate-500 focus-visible:border-cyan-200"
-            />
-          </div>
-
-          <div>
-            <Label
-              htmlFor="ticket-phone"
-              className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70"
-            >
-              Phone / WhatsApp
-            </Label>
-            <Input
-              id="ticket-phone"
-              name="phone"
-              type="tel"
-              value={buyer.phone}
-              onChange={updateBuyer('phone')}
-              placeholder="+977 98XXXXXXXX"
-              autoComplete="tel"
-              required
-              className="mt-2 h-12 rounded-md border-white/14 bg-white/[0.07] px-4 text-white placeholder:text-slate-500 focus-visible:border-cyan-200"
-            />
           </div>
         </div>
 
@@ -314,9 +278,7 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
             <button
               type="button"
               className="grid min-h-12 place-items-center border-r border-white/10 text-white transition hover:bg-white/10 disabled:text-white/30"
-              onClick={() =>
-                setQuantity((current) => clampQuantity(current - 1))
-              }
+              onClick={() => updateQuantity(quantity - 1)}
               disabled={quantity <= 1}
               aria-label="Decrease ticket quantity"
             >
@@ -337,14 +299,98 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
             <button
               type="button"
               className="grid min-h-12 place-items-center border-l border-white/10 text-white transition hover:bg-white/10 disabled:text-white/30"
-              onClick={() =>
-                setQuantity((current) => clampQuantity(current + 1))
-              }
+              onClick={() => updateQuantity(quantity + 1)}
               disabled={quantity >= 10}
               aria-label="Increase ticket quantity"
             >
               <Plus className="size-4" aria-hidden="true" />
             </button>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.035] p-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70">
+                Attendee details
+              </p>
+              <p className="mt-1 text-sm font-semibold leading-6 text-slate-400">
+                Add details for every ticket in this order.
+              </p>
+            </div>
+            <p className="rounded-md border border-red-300/24 bg-red-500/10 px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-red-100">
+              Bring real ID card for gate verification if required
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-4">
+            {attendees.map((attendee, index) => (
+              <div
+                key={index}
+                className="rounded-md border border-white/10 bg-[#070d1c] p-4"
+              >
+                <p className="text-sm font-black uppercase tracking-[0.12em] text-white">
+                  Ticket {index + 1}
+                </p>
+                <div className="mt-4 grid gap-4 md:grid-cols-3">
+                  <div>
+                    <Label
+                      htmlFor={`attendee-name-${index}`}
+                      className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70"
+                    >
+                      Full name
+                    </Label>
+                    <Input
+                      id={`attendee-name-${index}`}
+                      value={attendee.name}
+                      onChange={updateAttendee(index, 'name')}
+                      placeholder="As per ID card"
+                      autoComplete={index === 0 ? 'name' : 'off'}
+                      required
+                      className="mt-2 h-12 rounded-md border-white/14 bg-white/[0.07] px-4 text-white placeholder:text-slate-500 focus-visible:border-cyan-200"
+                    />
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor={`attendee-email-${index}`}
+                      className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70"
+                    >
+                      Gmail / email
+                    </Label>
+                    <Input
+                      id={`attendee-email-${index}`}
+                      type="email"
+                      value={attendee.email}
+                      onChange={updateAttendee(index, 'email')}
+                      placeholder="name@gmail.com"
+                      autoComplete={index === 0 ? 'email' : 'off'}
+                      required
+                      className="mt-2 h-12 rounded-md border-white/14 bg-white/[0.07] px-4 text-white placeholder:text-slate-500 focus-visible:border-cyan-200"
+                    />
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor={`attendee-phone-${index}`}
+                      className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70"
+                    >
+                      WhatsApp
+                    </Label>
+                    <Input
+                      id={`attendee-phone-${index}`}
+                      type="tel"
+                      value={attendee.phone}
+                      onChange={updateAttendee(index, 'phone')}
+                      placeholder="+977 98XXXXXXXX"
+                      autoComplete={index === 0 ? 'tel' : 'off'}
+                      required
+                      className="mt-2 h-12 rounded-md border-white/14 bg-white/[0.07] px-4 text-white placeholder:text-slate-500 focus-visible:border-cyan-200"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

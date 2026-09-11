@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
   await sendSheetRecord({
     payload: {
-      amountNpr:
+      totalAmountNpr:
         typeof payload.total_amount === 'number'
           ? payload.total_amount / 100
           : '',

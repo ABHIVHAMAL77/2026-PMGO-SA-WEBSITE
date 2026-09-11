@@ -5,6 +5,7 @@ export type TicketPlan = {
   name: string;
   price: string;
   amountNpr: number;
+  vatRate: number;
   subline: string;
   details: string[];
   featured?: boolean;
@@ -16,8 +17,14 @@ export const ticketPlans: TicketPlan[] = [
     name: 'General Pass',
     price: 'NPR 400',
     amountNpr: 400,
+    vatRate: 0.13,
     subline: 'per day',
-    details: ['Single-day entry', 'General audience access', 'Capacity TBA'],
+    details: [
+      'Single-day entry',
+      'General audience access',
+      '13% VAT added at checkout',
+      'Identity proof may be required at gate',
+    ],
   },
 ];
 

@@ -44,7 +44,9 @@ const response = await fetch(webhookUrl, {
   },
   body: JSON.stringify({
     payload: {
-      amountNpr: 400,
+      amountNpr: 452,
+      attendeeDetails: '1. VPS Script Test | vpstest@gmail.com | 9800000000',
+      baseAmountNpr: 400,
       buyerEmail: 'vpstest@gmail.com',
       buyerName: 'VPS Script Test',
       buyerPhone: '9800000000',
@@ -59,6 +61,8 @@ const response = await fetch(webhookUrl, {
       status: 'New',
       ticketId: 'general-day-pass',
       ticketName: 'General Pass',
+      totalAmountNpr: 452,
+      vatAmountNpr: 52,
       whatsapp: '9800000000',
     },
     secret,

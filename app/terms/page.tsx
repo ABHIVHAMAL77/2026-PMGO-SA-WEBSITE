@@ -49,7 +49,9 @@ const termSections = [
     title: 'Pass Validity',
     items: [
       'General Pass is valid for one selected event day only.',
+      'Ticket price is NPR 400 per ticket, with 13% VAT added at checkout.',
       'Each attendee must hold a valid General Pass for the day they attend.',
+      'Each ticket order must include attendee name, email, and WhatsApp details for every ticket quantity.',
       'VIP and seasonal passes are not available for this event ticketing phase.',
     ],
   },
@@ -74,6 +76,7 @@ const termSections = [
     title: 'Entry & Venue Rules',
     items: [
       'Door opening time is TBD and entry is subject to venue checks.',
+      'Attendees must bring a real ID card for identity proof at the gate if required by event staff.',
       'Capacity by ticket zone is TBA and may be managed by the organizer for safety and operations.',
       'Attendees must follow venue security checks, organizer instructions, and event staff directions.',
       'The organizer may deny entry for unsafe behavior, invalid passes, or non-compliance with event rules.',

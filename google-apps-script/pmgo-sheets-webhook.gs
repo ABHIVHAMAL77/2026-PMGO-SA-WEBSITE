@@ -24,13 +24,11 @@ function doPost(event) {
 
     if (body.type === 'ticket') {
       const sheet = workbook.getSheetByName(TICKET_SHEET_NAME);
-      const eventDate =
-        payload.eventDateLabel ||
-        payload.eventDate ||
-        '';
+      const eventDate = payload.eventDateLabel || payload.eventDate || '';
 
       appendByHeader(sheet, {
-        'Amount NPR': payload.amountNpr || '',
+        'Attendee Details': payload.attendeeDetails || '',
+        'Base Amount NPR': payload.baseAmountNpr || '',
         'Buyer Email': payload.buyerEmail || '',
         'Buyer Name': payload.buyerName || '',
         'Buyer Phone': payload.buyerPhone || '',
@@ -45,7 +43,9 @@ function doPost(event) {
         'Ticket ID': payload.ticketId || '',
         'Ticket Name': payload.ticketName || '',
         Timestamp: new Date(),
+        'Total Amount NPR': payload.totalAmountNpr || payload.amountNpr || '',
         'Transaction ID': payload.transactionId || '',
+        'VAT NPR': payload.vatAmountNpr || '',
       });
     } else if (body.type === 'media') {
       appendByHeader(workbook.getSheetByName(MEDIA_SHEET_NAME), {

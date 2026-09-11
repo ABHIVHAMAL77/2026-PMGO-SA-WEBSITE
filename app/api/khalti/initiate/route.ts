@@ -8,6 +8,7 @@ type KhaltiCustomer = {
 };
 
 type InitiateRequestBody = {
+  attendees?: KhaltiCustomer[];
   customer?: KhaltiCustomer;
   eventDate?: string;
   eventDateLabel?: string;
@@ -44,6 +45,15 @@ const normalizeQuantity = (value: unknown) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) ? Math.min(10, Math.max(1, parsed)) : 1;
 };
+
+const normalizeAttendees = (value: unknown, quantity: number) =>
+  Array.isArray(value)
+    ? value.slice(0, quantity).map((attendee) => ({
+        email: normalizeText((attendee as KhaltiCustomer)?.email),
+        name: normalizeText((attendee as KhaltiCustomer)?.name),
+        phone: normalizeText((attendee as KhaltiCustomer)?.phone),
+      }))
+    : [];
 
 export async function POST(request: Request) {
   const secretKey = process.env.KHALTI_SECRET_KEY;
@@ -83,20 +93,35 @@ export async function POST(request: Request) {
     );
   }
 
-  const customer = body?.customer ?? {};
+  const quantity = normalizeQuantity(body?.quantity);
+  const attendees = normalizeAttendees(body?.attendees, quantity);
+  const customer = attendees[0] ?? body?.customer ?? {};
   const customerName = normalizeText(customer.name);
   const customerEmail = normalizeText(customer.email);
   const customerPhone = normalizeText(customer.phone);
 
-  if (!customerName || !customerEmail || !customerPhone) {
+  if (
+    attendees.length !== quantity ||
+    attendees.some(
+      (attendee) => !attendee.name || !attendee.email || !attendee.phone,
+    ) ||
+    !customerName ||
+    !customerEmail ||
+    !customerPhone
+  ) {
     return Response.json(
-      { error: 'Please enter the ticket buyer name, email, and phone.' },
+      {
+        error:
+          'Please enter attendee name, email, and WhatsApp for every ticket.',
+      },
       { status: 400 },
     );
   }
 
-  const quantity = normalizeQuantity(body?.quantity);
-  const amount = ticket.amountNpr * quantity * 100;
+  const baseAmountNpr = ticket.amountNpr * quantity;
+  const vatAmountNpr = Math.round(baseAmountNpr * ticket.vatRate);
+  const totalAmountNpr = baseAmountNpr + vatAmountNpr;
+  const amount = totalAmountNpr * 100;
   const origin = getSiteOrigin(request);
   const orderId = `pmgo-sa-${ticket.id}-${crypto.randomUUID()}`;
 
@@ -116,7 +141,7 @@ export async function POST(request: Request) {
           amount_breakdown: [
             {
               amount,
-              label: `${ticket.name} - ${eventDateLabel} x${quantity}`,
+              label: `${ticket.name} - ${eventDateLabel} x${quantity} incl. VAT`,
             },
           ],
           customer_info: {
@@ -130,7 +155,8 @@ export async function POST(request: Request) {
               name: `${ticket.name} - ${eventDateLabel}`,
               quantity,
               total_price: amount,
-              unit_price: ticket.amountNpr * 100,
+              unit_price:
+                Math.round(ticket.amountNpr * (1 + ticket.vatRate)) * 100,
             },
           ],
           purchase_order_id: orderId,
@@ -169,7 +195,14 @@ export async function POST(request: Request) {
 
   await sendSheetRecord({
     payload: {
-      amountNpr: ticket.amountNpr * quantity,
+      amountNpr: totalAmountNpr,
+      attendeeDetails: attendees
+        .map(
+          (attendee, index) =>
+            `${index + 1}. ${attendee.name} | ${attendee.email} | ${attendee.phone}`,
+        )
+        .join('\n'),
+      baseAmountNpr,
       buyerEmail: customerEmail,
       buyerName: customerName,
       buyerPhone: customerPhone,
@@ -182,6 +215,8 @@ export async function POST(request: Request) {
       status: 'Pending',
       ticketId: ticket.id,
       ticketName: ticket.name,
+      totalAmountNpr,
+      vatAmountNpr,
     },
     type: 'ticket',
   }).catch(() => null);
