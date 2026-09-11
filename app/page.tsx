@@ -1,5 +1,4 @@
 /* oxlint-disable next/no-img-element */
-import Link from 'next/link';
 import {
   CalendarDays,
   CheckCircle2,
@@ -801,13 +800,13 @@ export default function Home() {
           </div>
 
           <div className="md:justify-self-end md:self-center">
-            <Link
+            <a
               href="/terms"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-cyan-200/28 bg-white/[0.06] px-5 text-sm font-black uppercase tracking-[0.16em] text-cyan-100 transition hover:bg-cyan-100 hover:text-[#071123]"
             >
               <Ticket className="size-4" aria-hidden="true" />
               Terms & Conditions
-            </Link>
+            </a>
           </div>
         </div>
       </footer>
