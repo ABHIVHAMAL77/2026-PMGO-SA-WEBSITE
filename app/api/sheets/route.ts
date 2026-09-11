@@ -18,6 +18,15 @@ type SheetRequestBody = {
 const normalizeText = (value: unknown) =>
   typeof value === 'string' ? value.trim() : '';
 
+export function GET() {
+  return Response.json({
+    configured: Boolean(
+      process.env.GOOGLE_SHEETS_WEBHOOK_URL?.trim() &&
+        process.env.SHEETS_WEBHOOK_SECRET?.trim(),
+    ),
+  });
+}
+
 export async function POST(request: Request) {
   const body = (await request
     .json()
@@ -51,13 +60,23 @@ export async function POST(request: Request) {
   }
 
   try {
-    await sendSheetRecord({
+    const sheetResult = await sendSheetRecord({
       payload: {
         ...application,
         status: 'New',
       },
       type: 'media',
     });
+
+    if (sheetResult.skipped) {
+      return Response.json(
+        {
+          error:
+            'Sheet connection is not configured on the server yet.',
+        },
+        { status: 503 },
+      );
+    }
   } catch {
     return Response.json(
       {
