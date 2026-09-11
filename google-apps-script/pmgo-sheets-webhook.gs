@@ -27,9 +27,7 @@ function doPost(event) {
       const eventDate =
         payload.eventDateLabel ||
         payload.eventDate ||
-        (payload.ticketId === 'seasonal-pass'
-          ? '16-19 Sep 2026 - All days'
-          : '');
+        '';
 
       appendByHeader(sheet, {
         'Amount NPR': payload.amountNpr || '',

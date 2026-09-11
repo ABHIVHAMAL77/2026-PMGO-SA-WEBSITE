@@ -58,7 +58,7 @@ const response = await fetch(webhookUrl, {
       quantity: 1,
       status: 'New',
       ticketId: 'general-day-pass',
-      ticketName: 'General Day Pass',
+      ticketName: 'General Pass',
       whatsapp: '9800000000',
     },
     secret,

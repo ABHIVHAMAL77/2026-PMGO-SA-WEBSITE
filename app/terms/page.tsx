@@ -48,10 +48,9 @@ const termSections = [
   {
     title: 'Pass Validity',
     items: [
-      'General Day Pass is valid for one selected event day only.',
-      'VIP Day Pass is valid for one selected event day and includes VIP access card benefits as issued by the organizer.',
-      'Seasonal Pass is valid for all four grand finals days from 16-19 September 2026.',
-      'Each attendee must hold a valid pass for the day they attend.',
+      'General Pass is valid for one selected event day only.',
+      'Each attendee must hold a valid General Pass for the day they attend.',
+      'VIP and seasonal passes are not available for this event ticketing phase.',
     ],
   },
   {

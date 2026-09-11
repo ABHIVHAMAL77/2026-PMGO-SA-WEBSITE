@@ -73,15 +73,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const isSeasonalPass = ticket.id === 'seasonal-pass';
-  const eventDate = isSeasonalPass
-    ? '2026-09-16 to 2026-09-19'
-    : requestedEventDate;
-  const eventDateLabel = isSeasonalPass
-    ? '16-19 Sep 2026 - All days'
-    : validEventDates.get(requestedEventDate);
+  const eventDate = requestedEventDate;
+  const eventDateLabel = validEventDates.get(requestedEventDate);
 
-  if (!isSeasonalPass && !eventDateLabel) {
+  if (!eventDateLabel) {
     return Response.json(
       { error: 'Please choose a valid event date.' },
       { status: 400 },

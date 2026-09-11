@@ -58,10 +58,9 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
   );
 
   const total = selectedTicket ? selectedTicket.amountNpr * quantity : 0;
-  const isSeasonalPass = selectedTicket?.id === 'seasonal-pass';
-  const selectedDateLabel = isSeasonalPass
-    ? '16-19 Sep 2026'
-    : eventDates.find((date) => date.value === selectedDate)?.label;
+  const selectedDateLabel = eventDates.find(
+    (date) => date.value === selectedDate,
+  )?.label;
 
   const updateBuyer =
     (field: keyof BuyerDetails) => (event: ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +99,7 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
         },
         body: JSON.stringify({
           customer: buyer,
-          eventDate: isSeasonalPass ? '2026-09-16 to 2026-09-19' : selectedDate,
+          eventDate: selectedDate,
           eventDateLabel: selectedDateLabel,
           quantity,
           ticketId: selectedTicket.id,
@@ -310,25 +309,18 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
           </Label>
           <NativeSelect
             id="ticket-date"
-            value={isSeasonalPass ? 'all-days' : selectedDate}
+            value={selectedDate}
             onChange={(event) => {
               setSelectedDate(event.currentTarget.value);
               setError('');
             }}
-            disabled={isSeasonalPass}
             className="mt-2 w-full [&_select]:h-12 [&_select]:rounded-md [&_select]:border-white/14 [&_select]:bg-white/[0.07] [&_select]:px-4 [&_select]:pr-10 [&_select]:font-bold [&_select]:text-white [&_select]:focus-visible:border-cyan-200"
           >
-            {isSeasonalPass ? (
-              <NativeSelectOption value="all-days">
-                16-19 Sep 2026 - All days
+            {eventDates.map((date) => (
+              <NativeSelectOption key={date.value} value={date.value}>
+                {date.label}
               </NativeSelectOption>
-            ) : (
-              eventDates.map((date) => (
-                <NativeSelectOption key={date.value} value={date.value}>
-                  {date.label}
-                </NativeSelectOption>
-              ))
-            )}
+            ))}
           </NativeSelect>
         </div>
 
