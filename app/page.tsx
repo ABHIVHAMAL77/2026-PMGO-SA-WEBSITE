@@ -473,12 +473,12 @@ export default function Home() {
                 Tickets
               </p>
               <h2 className="mt-3 text-4xl font-black uppercase leading-none sm:text-6xl">
-                Choose your pass.
+                Secure your seat.
               </h2>
             </div>
             <p className="max-w-xl text-base leading-7 text-slate-300">
-              Select your pass, add buyer details, and continue through Khalti
-              checkout.
+              Pick your event day, add buyer details, and continue through
+              Khalti checkout.
             </p>
           </div>
 

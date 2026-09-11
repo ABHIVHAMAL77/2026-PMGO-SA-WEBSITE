@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, SyntheticEvent, useMemo, useState } from 'react';
+import { ChangeEvent, SyntheticEvent, useState } from 'react';
 import {
   CheckCircle2,
   Loader2,
@@ -10,7 +10,6 @@ import {
   Ticket,
 } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,18 +43,13 @@ const eventDates = [
 const clampQuantity = (value: number) => Math.min(10, Math.max(1, value));
 
 export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
-  const [selectedId, setSelectedId] = useState(tickets[0]?.id ?? '');
   const [selectedDate, setSelectedDate] = useState(eventDates[0].value);
   const [quantity, setQuantity] = useState(1);
   const [buyer, setBuyer] = useState<BuyerDetails>(initialBuyer);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const selectedTicket = useMemo(
-    () => tickets.find((ticket) => ticket.id === selectedId) ?? tickets[0],
-    [selectedId, tickets],
-  );
-
+  const selectedTicket = tickets[0];
   const total = selectedTicket ? selectedTicket.amountNpr * quantity : 0;
   const selectedDateLabel = eventDates.find(
     (date) => date.value === selectedDate,
@@ -129,81 +123,54 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
 
   return (
     <div
-      className="mt-10 grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(360px,0.82fr)]"
+      className="mt-10 overflow-hidden rounded-lg border border-white/12 bg-[#050915]/82 shadow-[0_34px_130px_rgba(3,7,18,0.55)] backdrop-blur-2xl xl:grid xl:grid-cols-[minmax(310px,0.72fr)_minmax(0,1fr)]"
       data-qa="ticket-grid"
     >
-      <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-        {tickets.map((ticket) => {
-          const isSelected = ticket.id === selectedTicket?.id;
+      <aside className="relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_24%_0%,rgba(125,249,255,0.24),transparent_34%),linear-gradient(135deg,rgba(13,29,61,0.94),rgba(5,9,21,0.98))] p-5 sm:p-7 xl:border-r xl:border-b-0">
+        <div className="absolute -right-20 -top-20 size-56 rounded-full border border-cyan-100/14" />
+        <div className="absolute bottom-0 right-0 h-28 w-44 bg-red-500/10 blur-3xl" />
 
-          return (
-            <article
-              key={ticket.id}
-              className={cn(
-                'ticket-tilt flex min-h-[330px] flex-col rounded-lg border p-6 transition duration-300 sm:p-8',
-                isSelected
-                  ? 'border-cyan-200 bg-[#0a1429] shadow-[0_28px_92px_rgba(34,211,238,0.18)]'
-                  : ticket.featured
-                    ? 'border-red-400 bg-[#0a1227] shadow-[0_28px_92px_rgba(239,68,68,0.18)]'
-                    : 'border-white/10 bg-white/[0.055] shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
-              )}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="text-3xl font-black uppercase leading-tight">
-                  {ticket.name}
-                </h3>
-                {ticket.featured && (
-                  <Badge className="rounded-md bg-red-500 text-white">
-                    Best Value
-                  </Badge>
-                )}
-              </div>
+        <div className="relative">
+          <div className="inline-flex items-center gap-2 rounded-md border border-cyan-200/28 bg-cyan-200/10 px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-100">
+            <Ticket className="size-4" aria-hidden="true" />
+            Official Ticket
+          </div>
 
-              <div className="mt-9">
-                <p className="text-5xl font-black">{ticket.price}</p>
-                <p className="mt-2 text-sm font-black uppercase tracking-[0.14em] text-cyan-100/62">
-                  {ticket.subline}
-                </p>
-              </div>
+          <h3 className="mt-7 text-4xl font-black uppercase leading-none text-white sm:text-5xl">
+            {selectedTicket?.name}
+          </h3>
 
-              <ul className="mt-8 grid gap-3">
-                {ticket.details.map((detail) => (
-                  <li
-                    key={detail}
-                    className="flex items-center gap-3 text-sm font-semibold text-slate-200"
-                  >
-                    <CheckCircle2
-                      className="size-4 shrink-0 text-cyan-200"
-                      aria-hidden="true"
-                    />
-                    {detail}
-                  </li>
-                ))}
-              </ul>
+          <div className="mt-7 rounded-lg border border-white/12 bg-white/[0.07] p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-100/58">
+              Ticket price
+            </p>
+            <p className="mt-2 text-5xl font-black leading-none text-white">
+              NPR 400
+            </p>
+            <p className="mt-2 text-sm font-black uppercase tracking-[0.14em] text-cyan-100/62">
+              Per selected day
+            </p>
+          </div>
 
-              <Button
-                type="button"
-                onClick={() => setSelectedId(ticket.id)}
-                className={cn(
-                  'mt-auto min-h-12 w-full rounded-md text-sm font-black uppercase tracking-[0.08em]',
-                  isSelected
-                    ? 'bg-cyan-200 text-[#071123] hover:bg-cyan-100'
-                    : ticket.featured
-                      ? 'bg-red-500 text-white hover:bg-red-400'
-                      : 'bg-white text-[#071123] hover:bg-cyan-100',
-                )}
-                aria-pressed={isSelected}
+          <ul className="mt-6 grid gap-3">
+            {selectedTicket?.details.map((detail) => (
+              <li
+                key={detail}
+                className="flex items-center gap-3 text-sm font-semibold text-slate-200"
               >
-                <Ticket className="size-4" aria-hidden="true" />
-                {isSelected ? 'Selected' : 'Select Pass'}
-              </Button>
-            </article>
-          );
-        })}
-      </div>
+                <CheckCircle2
+                  className="size-4 shrink-0 text-cyan-200"
+                  aria-hidden="true"
+                />
+                {detail}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
 
       <form
-        className="depth-panel rounded-lg border border-white/12 bg-[#050915]/82 p-5 shadow-[0_30px_120px_rgba(7,13,31,0.5)] backdrop-blur-2xl sm:p-6"
+        className="p-5 sm:p-7 lg:p-8"
         onSubmit={handleSubmit}
         data-qa="khalti-ticket-checkout"
       >
@@ -219,26 +186,31 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
           <ShieldCheck className="size-7 text-red-300" aria-hidden="true" />
         </div>
 
-        <div className="mt-6 rounded-md border border-white/10 bg-white/[0.055] p-4">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/58">
-            Selected pass
-          </p>
-          <div className="mt-3 flex items-end justify-between gap-4">
+        <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.055] p-4">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-xl font-black uppercase text-white">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/58">
+                Selected pass
+              </p>
+              <p className="mt-2 text-xl font-black uppercase text-white">
                 {selectedTicket?.name}
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-400">
                 {selectedTicket?.subline} · {selectedDateLabel}
               </p>
             </div>
-            <p className="text-2xl font-black text-white">
-              NPR {total.toLocaleString('en-US')}
-            </p>
+            <div className="rounded-md bg-cyan-200 px-4 py-3 text-right text-[#071123]">
+              <p className="text-xs font-black uppercase tracking-[0.12em]">
+                Total
+              </p>
+              <p className="text-2xl font-black">
+                NPR {total.toLocaleString('en-US')}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
           <div>
             <Label
               htmlFor="ticket-name"
@@ -319,9 +291,9 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
                   setError('');
                 }}
                 className={cn(
-                  'min-h-12 rounded-md border px-3 text-sm font-black uppercase tracking-[0.06em] transition',
+                  'min-h-14 rounded-md border px-3 text-sm font-black uppercase tracking-[0.06em] transition',
                   selectedDate === date.value
-                    ? 'border-cyan-200 bg-cyan-200 text-[#071123] shadow-[0_14px_36px_rgba(34,211,238,0.2)]'
+                    ? 'border-cyan-200 bg-cyan-200 text-[#071123] shadow-[0_16px_40px_rgba(34,211,238,0.22)]'
                     : 'border-white/14 bg-white/[0.07] text-white hover:border-cyan-100/70 hover:bg-white/[0.1]',
                 )}
               >
