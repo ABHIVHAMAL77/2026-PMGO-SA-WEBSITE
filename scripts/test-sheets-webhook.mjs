@@ -44,14 +44,25 @@ const response = await fetch(webhookUrl, {
   },
   body: JSON.stringify({
     payload: {
+      amountNpr: 400,
+      buyerEmail: 'vpstest@gmail.com',
+      buyerName: 'VPS Script Test',
+      buyerPhone: '9800000000',
+      event: 'Checkout Started',
+      eventDate: '2026-09-16',
+      eventDateLabel: '16 Sep 2026',
       fullName: 'VPS Script Test',
       gmail: 'vpstest@gmail.com',
       nationalId: 'VPS-TEST-123',
+      orderId: 'vps-script-test',
+      quantity: 1,
       status: 'New',
+      ticketId: 'general-day-pass',
+      ticketName: 'General Day Pass',
       whatsapp: '9800000000',
     },
     secret,
-    type: 'media',
+    type: process.argv.includes('--ticket') ? 'ticket' : 'media',
   }),
 });
 

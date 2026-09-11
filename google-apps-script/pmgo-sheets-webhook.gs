@@ -33,6 +33,7 @@ function doPost(event) {
           payload.status || '',
           payload.ticketId || '',
           payload.ticketName || '',
+          payload.eventDateLabel || payload.eventDate || '',
           payload.quantity || '',
           payload.amountNpr || '',
           payload.buyerName || '',

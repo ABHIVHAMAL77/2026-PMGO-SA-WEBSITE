@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { cn } from '@/lib/utils';
 import type { TicketPlan } from '@/lib/tickets';
 
@@ -34,10 +35,18 @@ const initialBuyer: BuyerDetails = {
   phone: '',
 };
 
+const eventDates = [
+  { label: '16 Sep 2026', value: '2026-09-16' },
+  { label: '17 Sep 2026', value: '2026-09-17' },
+  { label: '18 Sep 2026', value: '2026-09-18' },
+  { label: '19 Sep 2026', value: '2026-09-19' },
+];
+
 const clampQuantity = (value: number) => Math.min(10, Math.max(1, value));
 
 export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
   const [selectedId, setSelectedId] = useState(tickets[0]?.id ?? '');
+  const [selectedDate, setSelectedDate] = useState(eventDates[0].value);
   const [quantity, setQuantity] = useState(1);
   const [buyer, setBuyer] = useState<BuyerDetails>(initialBuyer);
   const [loading, setLoading] = useState(false);
@@ -49,6 +58,10 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
   );
 
   const total = selectedTicket ? selectedTicket.amountNpr * quantity : 0;
+  const isSeasonalPass = selectedTicket?.id === 'seasonal-pass';
+  const selectedDateLabel = isSeasonalPass
+    ? '16-19 Sep 2026'
+    : eventDates.find((date) => date.value === selectedDate)?.label;
 
   const updateBuyer =
     (field: keyof BuyerDetails) => (event: ChangeEvent<HTMLInputElement>) => {
@@ -87,6 +100,8 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
         },
         body: JSON.stringify({
           customer: buyer,
+          eventDate: isSeasonalPass ? '2026-09-16 to 2026-09-19' : selectedDate,
+          eventDateLabel: selectedDateLabel,
           quantity,
           ticketId: selectedTicket.id,
         }),
@@ -216,7 +231,7 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
                 {selectedTicket?.name}
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-400">
-                {selectedTicket?.subline}
+                {selectedTicket?.subline} · {selectedDateLabel}
               </p>
             </div>
             <p className="text-2xl font-black text-white">
@@ -284,6 +299,37 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
               className="mt-2 h-12 rounded-md border-white/14 bg-white/[0.07] px-4 text-white placeholder:text-slate-500 focus-visible:border-cyan-200"
             />
           </div>
+        </div>
+
+        <div className="mt-5">
+          <Label
+            htmlFor="ticket-date"
+            className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70"
+          >
+            Event date
+          </Label>
+          <NativeSelect
+            id="ticket-date"
+            value={isSeasonalPass ? 'all-days' : selectedDate}
+            onChange={(event) => {
+              setSelectedDate(event.currentTarget.value);
+              setError('');
+            }}
+            disabled={isSeasonalPass}
+            className="mt-2 w-full [&_select]:h-12 [&_select]:rounded-md [&_select]:border-white/14 [&_select]:bg-white/[0.07] [&_select]:px-4 [&_select]:pr-10 [&_select]:font-bold [&_select]:text-white [&_select]:focus-visible:border-cyan-200"
+          >
+            {isSeasonalPass ? (
+              <NativeSelectOption value="all-days">
+                16-19 Sep 2026 - All days
+              </NativeSelectOption>
+            ) : (
+              eventDates.map((date) => (
+                <NativeSelectOption key={date.value} value={date.value}>
+                  {date.label}
+                </NativeSelectOption>
+              ))
+            )}
+          </NativeSelect>
         </div>
 
         <div className="mt-5">

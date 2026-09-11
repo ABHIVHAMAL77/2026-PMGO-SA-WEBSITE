@@ -9,9 +9,18 @@ type KhaltiCustomer = {
 
 type InitiateRequestBody = {
   customer?: KhaltiCustomer;
+  eventDate?: string;
+  eventDateLabel?: string;
   quantity?: number;
   ticketId?: string;
 };
+
+const validEventDates = new Map([
+  ['2026-09-16', '16 Sep 2026'],
+  ['2026-09-17', '17 Sep 2026'],
+  ['2026-09-18', '18 Sep 2026'],
+  ['2026-09-19', '19 Sep 2026'],
+]);
 
 const khaltiApiBaseUrl =
   process.env.KHALTI_API_BASE_URL ?? 'https://dev.khalti.com/api/v2';
@@ -54,10 +63,27 @@ export async function POST(request: Request) {
     .catch(() => null)) as InitiateRequestBody | null;
 
   const ticket = getTicketPlan(normalizeText(body?.ticketId));
+  const requestedEventDate = normalizeText(body?.eventDate);
+  const requestedEventDateLabel = normalizeText(body?.eventDateLabel);
 
   if (!ticket) {
     return Response.json(
       { error: 'Please choose a valid pass.' },
+      { status: 400 },
+    );
+  }
+
+  const isSeasonalPass = ticket.id === 'seasonal-pass';
+  const eventDate = isSeasonalPass
+    ? '2026-09-16 to 2026-09-19'
+    : requestedEventDate;
+  const eventDateLabel = isSeasonalPass
+    ? '16-19 Sep 2026 - All days'
+    : validEventDates.get(requestedEventDate);
+
+  if (!isSeasonalPass && !eventDateLabel) {
+    return Response.json(
+      { error: 'Please choose a valid event date.' },
       { status: 400 },
     );
   }
@@ -95,7 +121,7 @@ export async function POST(request: Request) {
           amount_breakdown: [
             {
               amount,
-              label: `${ticket.name} x${quantity}`,
+              label: `${ticket.name} - ${eventDateLabel} x${quantity}`,
             },
           ],
           customer_info: {
@@ -106,14 +132,14 @@ export async function POST(request: Request) {
           product_details: [
             {
               identity: ticket.id,
-              name: ticket.name,
+              name: `${ticket.name} - ${eventDateLabel}`,
               quantity,
               total_price: amount,
               unit_price: ticket.amountNpr * 100,
             },
           ],
           purchase_order_id: orderId,
-          purchase_order_name: `${ticket.name} - PMGO SA Fall 2026`,
+          purchase_order_name: `${ticket.name} - ${eventDateLabel}`,
           return_url: `${origin}/tickets/complete`,
           website_url: origin,
         }),
@@ -153,6 +179,8 @@ export async function POST(request: Request) {
       buyerName: customerName,
       buyerPhone: customerPhone,
       event: 'Checkout Started',
+      eventDate,
+      eventDateLabel,
       orderId,
       pidx: payload.pidx ?? '',
       quantity,
