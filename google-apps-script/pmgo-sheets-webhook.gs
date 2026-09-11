@@ -23,6 +23,13 @@ function doPost(event) {
     const payload = body.payload || {};
 
     if (body.type === 'ticket') {
+      const eventDate =
+        payload.eventDateLabel ||
+        payload.eventDate ||
+        (payload.ticketId === 'seasonal-pass'
+          ? '16-19 Sep 2026 - All days'
+          : '');
+
       workbook
         .getSheetByName(TICKET_SHEET_NAME)
         .appendRow([
@@ -33,7 +40,7 @@ function doPost(event) {
           payload.status || '',
           payload.ticketId || '',
           payload.ticketName || '',
-          payload.eventDateLabel || payload.eventDate || '',
+          eventDate,
           payload.quantity || '',
           payload.amountNpr || '',
           payload.buyerName || '',
