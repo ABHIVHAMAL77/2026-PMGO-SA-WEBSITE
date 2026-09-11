@@ -23,6 +23,7 @@ function doPost(event) {
     const payload = body.payload || {};
 
     if (body.type === 'ticket') {
+      const sheet = workbook.getSheetByName(TICKET_SHEET_NAME);
       const eventDate =
         payload.eventDateLabel ||
         payload.eventDate ||
@@ -30,42 +31,38 @@ function doPost(event) {
           ? '16-19 Sep 2026 - All days'
           : '');
 
-      workbook
-        .getSheetByName(TICKET_SHEET_NAME)
-        .appendRow([
-          new Date(),
-          payload.event || '',
-          payload.orderId || '',
-          payload.pidx || '',
-          payload.status || '',
-          payload.ticketId || '',
-          payload.ticketName || '',
-          eventDate,
-          payload.quantity || '',
-          payload.amountNpr || '',
-          payload.buyerName || '',
-          payload.buyerEmail || '',
-          payload.buyerPhone || '',
-          payload.transactionId || '',
-          payload.khaltiMobile || '',
-          JSON.stringify(payload),
-        ]);
+      appendByHeader(sheet, {
+        'Amount NPR': payload.amountNpr || '',
+        'Buyer Email': payload.buyerEmail || '',
+        'Buyer Name': payload.buyerName || '',
+        'Buyer Phone': payload.buyerPhone || '',
+        Event: payload.event || '',
+        'Event Date': eventDate,
+        'Khalti Mobile': payload.khaltiMobile || '',
+        'Khalti PIDX': payload.pidx || '',
+        'Order ID': payload.orderId || '',
+        Quantity: payload.quantity || '',
+        'Raw Source': JSON.stringify(payload),
+        Status: payload.status || '',
+        'Ticket ID': payload.ticketId || '',
+        'Ticket Name': payload.ticketName || '',
+        Timestamp: new Date(),
+        'Transaction ID': payload.transactionId || '',
+      });
     } else if (body.type === 'media') {
-      workbook
-        .getSheetByName(MEDIA_SHEET_NAME)
-        .appendRow([
-          new Date(),
-          payload.fullName || '',
-          payload.nationalId || '',
-          payload.gmail || '',
-          payload.whatsapp || '',
-          payload.youtube || '',
-          payload.tiktok || '',
-          payload.instagram || '',
-          payload.status || 'New',
-          payload.notes || '',
-          JSON.stringify(payload),
-        ]);
+      appendByHeader(workbook.getSheetByName(MEDIA_SHEET_NAME), {
+        'Full Name': payload.fullName || '',
+        Gmail: payload.gmail || '',
+        Instagram: payload.instagram || '',
+        'National ID': payload.nationalId || '',
+        Notes: payload.notes || '',
+        'Raw Source': JSON.stringify(payload),
+        Status: payload.status || 'New',
+        TikTok: payload.tiktok || '',
+        Timestamp: new Date(),
+        WhatsApp: payload.whatsapp || '',
+        YouTube: payload.youtube || '',
+      });
     } else {
       return jsonResponse({ ok: false, error: 'Unknown record type' }, 400);
     }
@@ -80,4 +77,13 @@ function jsonResponse(payload, statusCode) {
   return ContentService.createTextOutput(JSON.stringify(payload)).setMimeType(
     ContentService.MimeType.JSON,
   );
+}
+
+function appendByHeader(sheet, valuesByHeader) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const row = headers.map(function (header) {
+    return valuesByHeader[header] || '';
+  });
+
+  sheet.appendRow(row);
 }
