@@ -1,17 +1,15 @@
 import { sendSheetRecord } from '@/lib/sheets';
+import { getKhaltiSecretKey, khaltiApiBaseUrl } from '@/lib/khalti';
 
 type LookupRequestBody = {
   pidx?: string;
 };
 
-const khaltiApiBaseUrl =
-  process.env.KHALTI_API_BASE_URL ?? 'https://dev.khalti.com/api/v2';
-
 const normalizeText = (value: unknown) =>
   typeof value === 'string' ? value.trim() : '';
 
 export async function POST(request: Request) {
-  const secretKey = process.env.KHALTI_SECRET_KEY;
+  const secretKey = getKhaltiSecretKey();
 
   if (!secretKey) {
     return Response.json(

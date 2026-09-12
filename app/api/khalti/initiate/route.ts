@@ -1,4 +1,5 @@
 import { getTicketPlan } from '@/lib/tickets';
+import { getKhaltiSecretKey, khaltiApiBaseUrl } from '@/lib/khalti';
 import { sendSheetRecord } from '@/lib/sheets';
 
 type KhaltiCustomer = {
@@ -22,9 +23,6 @@ const validEventDates = new Map([
   ['2026-09-18', '18 Sep 2026'],
   ['2026-09-19', '19 Sep 2026'],
 ]);
-
-const khaltiApiBaseUrl =
-  process.env.KHALTI_API_BASE_URL ?? 'https://dev.khalti.com/api/v2';
 
 const getSiteOrigin = (request: Request) => {
   const configuredOrigin =
@@ -56,7 +54,7 @@ const normalizeAttendees = (value: unknown, quantity: number) =>
     : [];
 
 export async function POST(request: Request) {
-  const secretKey = process.env.KHALTI_SECRET_KEY;
+  const secretKey = getKhaltiSecretKey();
 
   if (!secretKey) {
     return Response.json(
