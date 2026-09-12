@@ -151,8 +151,16 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
       <aside className="relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_24%_0%,rgba(125,249,255,0.24),transparent_34%),linear-gradient(135deg,rgba(13,29,61,0.94),rgba(5,9,21,0.98))] p-5 sm:p-7 xl:border-r xl:border-b-0">
         <div className="absolute -right-20 -top-20 size-56 rounded-full border border-cyan-100/14" />
         <div className="absolute bottom-0 right-0 h-28 w-44 bg-red-500/10 blur-3xl" />
+        <img
+          src="/xtreme-can.png"
+          alt=""
+          className="pointer-events-none absolute -bottom-8 right-8 hidden h-[46%] max-h-[430px] w-auto object-contain opacity-95 drop-shadow-[0_28px_60px_rgba(0,0,0,0.45)] xl:block"
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+        />
 
-        <div className="relative">
+        <div className="relative z-10">
           <div className="inline-flex items-center gap-2 rounded-md border border-cyan-200/28 bg-cyan-200/10 px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-100">
             <Ticket className="size-4" aria-hidden="true" />
             Official Ticket
