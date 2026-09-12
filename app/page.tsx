@@ -818,9 +818,9 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="relative z-10 border-t border-white/10 bg-[#050912] px-4 py-5 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-[1500px] flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-[420px]">
+      <footer className="relative z-10 border-t border-white/10 bg-[#050912] px-4 py-6 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1500px] flex-col items-center gap-5 text-center md:flex-row md:items-end md:justify-between md:text-left">
+          <div className="w-full max-w-[420px]">
             <img
               src={assets.esportsCounty}
               alt="Production credits: Krafton, Level Infinite, Lightspeed Studios, and Esports County"
@@ -828,12 +828,12 @@ export default function Home() {
             />
           </div>
 
-          <div className="flex flex-col gap-4 md:items-end">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 md:justify-end">
+          <div className="flex w-full flex-col items-center gap-4 md:w-auto md:items-end">
+            <div className="grid w-full max-w-[440px] grid-cols-3 items-center justify-items-center gap-x-5 gap-y-4 sm:flex sm:max-w-none sm:flex-wrap sm:justify-center md:justify-end">
               <img
                 src={titleSponsor.logo}
                 alt={titleSponsor.name}
-                className="h-8 w-auto object-contain"
+                className="h-7 w-auto object-contain sm:h-8"
                 loading="lazy"
                 decoding="async"
               />
@@ -842,7 +842,7 @@ export default function Home() {
                   key={sponsor.name}
                   src={sponsor.logo}
                   alt={`${sponsor.name} - ${sponsor.role}`}
-                  className={`h-7 w-auto max-w-[92px] object-contain ${
+                  className={`h-7 w-auto max-w-[88px] object-contain sm:max-w-[92px] ${
                     sponsor.invertOnDark ? 'brightness-0 invert' : ''
                   }`}
                   loading="lazy"

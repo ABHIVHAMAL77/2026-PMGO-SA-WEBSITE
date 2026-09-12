@@ -154,7 +154,7 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
         <img
           src="/xtreme-can.png"
           alt=""
-          className="pointer-events-none absolute -bottom-8 right-8 hidden h-[46%] max-h-[430px] w-auto object-contain opacity-95 drop-shadow-[0_28px_60px_rgba(0,0,0,0.45)] xl:block"
+          className="pointer-events-none absolute bottom-0 left-1/2 hidden h-[48%] max-h-[440px] w-auto -translate-x-1/2 object-contain opacity-95 drop-shadow-[0_28px_60px_rgba(0,0,0,0.45)] xl:block"
           aria-hidden="true"
           loading="lazy"
           decoding="async"
