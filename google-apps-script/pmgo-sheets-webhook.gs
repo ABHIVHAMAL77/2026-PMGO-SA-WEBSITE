@@ -21,6 +21,7 @@ function doPost(event) {
 
     const workbook = SpreadsheetApp.openById(spreadsheetId);
     const payload = body.payload || {};
+    let emailResult = null;
 
     if (body.type === 'ticket') {
       const sheet = workbook.getSheetByName(TICKET_SHEET_NAME);
@@ -57,7 +58,7 @@ function doPost(event) {
         );
 
         if (isCompletedStatus(payload.status)) {
-          sendTicketEmailForRow(sheet, updatedRowNumber);
+          emailResult = sendTicketEmailForRow(sheet, updatedRowNumber);
         }
       } else {
         appendByHeader(sheet, valuesByHeader);
@@ -80,7 +81,7 @@ function doPost(event) {
       return jsonResponse({ ok: false, error: 'Unknown record type' }, 400);
     }
 
-    return jsonResponse({ ok: true }, 200);
+    return jsonResponse({ ok: true, email: emailResult }, 200);
   } catch (error) {
     return jsonResponse({ ok: false, error: String(error) }, 500);
   }
@@ -155,8 +156,12 @@ function sendTicketEmailForRow(sheet, rowNumber) {
   const buyerEmail = rowData['Buyer Email'];
   const alreadySentAt = rowData['Ticket Email Sent At'];
 
-  if (!buyerEmail || alreadySentAt) {
-    return;
+  if (!buyerEmail) {
+    return { status: 'skipped', reason: 'Missing buyer email' };
+  }
+
+  if (alreadySentAt) {
+    return { status: 'skipped', reason: 'Already sent' };
   }
 
   try {
@@ -177,8 +182,11 @@ function sendTicketEmailForRow(sheet, rowNumber) {
 
     setByHeader(sheet, rowNumber, 'Ticket Email Sent At', new Date());
     setByHeader(sheet, rowNumber, 'Ticket Email Error', '');
+
+    return { status: 'sent', to: buyerEmail };
   } catch (error) {
     setByHeader(sheet, rowNumber, 'Ticket Email Error', String(error));
+    return { status: 'error', message: String(error) };
   }
 }
 
