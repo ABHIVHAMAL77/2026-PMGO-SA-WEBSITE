@@ -40,6 +40,7 @@ if (!webhookUrl || !secret) {
 const isTicket = process.argv.includes('--ticket');
 const isTicketUpdate = process.argv.includes('--ticket-update');
 const testPidx = `test-pidx-${Date.now()}`;
+const testEmail = process.env.TEST_TICKET_EMAIL ?? 'vpstest@gmail.com';
 
 const sendRecord = async (type, payload) => {
   const response = await fetch(webhookUrl, {
@@ -62,9 +63,9 @@ const sendRecord = async (type, payload) => {
 
 const ticketPayload = {
   amountNpr: 452,
-  attendeeDetails: '1. VPS Script Test | vpstest@gmail.com | 9800000000',
+  attendeeDetails: `1. VPS Script Test | ${testEmail} | 9800000000`,
   baseAmountNpr: 400,
-  buyerEmail: 'vpstest@gmail.com',
+  buyerEmail: testEmail,
   buyerName: 'VPS Script Test',
   buyerPhone: '9800000000',
   event: 'Checkout Started',
