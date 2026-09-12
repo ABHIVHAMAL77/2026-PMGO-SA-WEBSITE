@@ -37,40 +37,69 @@ if (!webhookUrl || !secret) {
   process.exit(1);
 }
 
-const response = await fetch(webhookUrl, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'text/plain;charset=utf-8',
-  },
-  body: JSON.stringify({
-    payload: {
-      amountNpr: 452,
-      attendeeDetails: '1. VPS Script Test | vpstest@gmail.com | 9800000000',
-      baseAmountNpr: 400,
-      buyerEmail: 'vpstest@gmail.com',
-      buyerName: 'VPS Script Test',
-      buyerPhone: '9800000000',
-      event: 'Checkout Started',
-      eventDate: '2026-09-16',
-      eventDateLabel: '16 Sep 2026',
-      fullName: 'VPS Script Test',
-      gmail: 'vpstest@gmail.com',
-      nationalId: 'VPS-TEST-123',
-      orderId: 'vps-script-test',
-      quantity: 1,
-      status: 'New',
-      ticketId: 'general-day-pass',
-      ticketName: 'General Pass',
-      totalAmountNpr: 452,
-      vatAmountNpr: 52,
-      whatsapp: '9800000000',
+const isTicket = process.argv.includes('--ticket');
+const isTicketUpdate = process.argv.includes('--ticket-update');
+const testPidx = `test-pidx-${Date.now()}`;
+
+const sendRecord = async (type, payload) => {
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8',
     },
-    secret,
-    type: process.argv.includes('--ticket') ? 'ticket' : 'media',
-  }),
-});
+    body: JSON.stringify({
+      payload,
+      secret,
+      type,
+    }),
+  });
 
-const text = await response.text();
+  const text = await response.text();
 
-console.log(`HTTP ${response.status}`);
-console.log(text.slice(0, 500));
+  console.log(`HTTP ${response.status}`);
+  console.log(text.slice(0, 500));
+};
+
+const ticketPayload = {
+  amountNpr: 452,
+  attendeeDetails: '1. VPS Script Test | vpstest@gmail.com | 9800000000',
+  baseAmountNpr: 400,
+  buyerEmail: 'vpstest@gmail.com',
+  buyerName: 'VPS Script Test',
+  buyerPhone: '9800000000',
+  event: 'Checkout Started',
+  eventDate: '2026-09-16',
+  eventDateLabel: '16 Sep 2026',
+  orderId: 'vps-script-test',
+  pidx: testPidx,
+  quantity: 1,
+  status: 'Pending',
+  ticketId: 'general-day-pass',
+  ticketName: 'General Pass',
+  totalAmountNpr: 452,
+  vatAmountNpr: 52,
+};
+
+if (isTicketUpdate) {
+  await sendRecord('ticket', ticketPayload);
+  await sendRecord('ticket', {
+    event: 'Payment Lookup',
+    khaltiMobile: '9800000000',
+    pidx: testPidx,
+    status: 'Completed',
+    totalAmountNpr: 452,
+    transactionId: 'test-transaction-id',
+  });
+} else if (isTicket) {
+  await sendRecord('ticket', ticketPayload);
+} else {
+  await sendRecord('media', {
+    fullName: 'VPS Script Test',
+    gmail: 'vpstest@gmail.com',
+    instagram: 'https://instagram.com/test',
+    nationalId: 'VPS-TEST-123',
+    tiktok: 'https://tiktok.com/@test',
+    whatsapp: '9800000000',
+    youtube: 'https://youtube.com/test',
+  });
+}
