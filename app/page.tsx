@@ -56,6 +56,35 @@ const eventDetails = [
   },
 ];
 
+const titleSponsor = {
+  name: 'Xtreme Energy Drink',
+  role: 'Title Sponsor',
+  logo: '/sponsor-xtreme-energy.png',
+};
+
+const eventSponsors = [
+  {
+    name: 'Holiday Inn Express',
+    role: 'Hospitality Partner',
+    logo: '/sponsor-holiday-inn.png',
+  },
+  {
+    name: 'Vianet',
+    role: 'ISP Partner',
+    logo: '/sponsor-vianet.png',
+  },
+  {
+    name: 'ESAN',
+    role: 'Associated With',
+    logo: '/sponsor-esan.png',
+  },
+  {
+    name: 'Infinix',
+    role: 'Smartphone Partner',
+    logo: '/sponsor-infinix.png',
+  },
+];
+
 const mediaRequirements = [
   'Full name',
   'National ID',
@@ -531,14 +560,46 @@ export default function Home() {
                 </article>
               );
             })}
-            <article className="depth-panel min-h-36 rounded-lg border border-white/10 bg-white/[0.06] p-5 backdrop-blur-md sm:col-span-2">
-              <Trophy className="size-6 text-red-300" aria-hidden="true" />
-              <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-cyan-100/58">
-                Sponsors and partners
-              </p>
-              <p className="mt-2 text-xl font-black uppercase leading-tight">
-                TBA
-              </p>
+            <article className="depth-panel overflow-hidden rounded-lg border border-cyan-200/25 bg-[linear-gradient(135deg,rgba(7,14,31,0.94),rgba(8,24,42,0.9))] p-5 backdrop-blur-md sm:col-span-2">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+                <div className="lg:w-[30%]">
+                  <Trophy className="size-6 text-red-300" aria-hidden="true" />
+                  <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-cyan-100/58">
+                    {titleSponsor.role}
+                  </p>
+                  <div className="mt-3 rounded-md border border-cyan-200/30 bg-[#071228] p-4 shadow-[0_0_38px_rgba(104,232,255,0.12)]">
+                    <img
+                      src={titleSponsor.logo}
+                      alt={titleSponsor.name}
+                      className="h-16 w-full object-contain"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid flex-1 grid-cols-2 gap-3 md:grid-cols-4">
+                  {eventSponsors.map((sponsor) => (
+                    <div
+                      key={sponsor.name}
+                      className="rounded-md border border-white/10 bg-white/[0.05] p-3"
+                    >
+                      <div className="flex h-14 items-center justify-center rounded bg-white px-3 py-2">
+                        <img
+                          src={sponsor.logo}
+                          alt={sponsor.name}
+                          className="max-h-10 w-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <p className="mt-3 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-100/58">
+                        {sponsor.role}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </article>
           </div>
         </div>
