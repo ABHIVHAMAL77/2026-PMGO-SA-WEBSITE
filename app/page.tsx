@@ -70,6 +70,7 @@ const footerSponsors = [
     name: 'Vianet',
     role: 'ISP Partner',
     logo: '/sponsor-vianet.png',
+    invertOnDark: true,
   },
   {
     name: 'ESAN',
@@ -80,6 +81,7 @@ const footerSponsors = [
     name: 'Infinix',
     role: 'Smartphone Partner',
     logo: '/sponsor-infinix.png',
+    invertOnDark: true,
   },
 ];
 
@@ -380,46 +382,69 @@ export default function Home() {
     <main className="relative min-h-screen overflow-hidden bg-[#050a16] text-white">
       <LazyThreeStage />
 
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#050912]/82 backdrop-blur-xl">
-        <nav className="mx-auto grid h-16 max-w-[1500px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:h-[72px] sm:px-6 lg:px-8">
-          <a
-            href="#top"
-            className="justify-self-start"
-            aria-label="PMGO SA Fall home"
-          >
-            <img
-              src={assets.pubgLogo}
-              alt="PUBG Mobile Esports"
-              className="h-9 w-11 object-contain opacity-95 sm:h-11 sm:w-14"
-            />
-          </a>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#050912]/88 backdrop-blur-xl">
+        <nav className="mx-auto flex max-w-[1500px] flex-col px-4 sm:px-6 lg:px-8">
+          <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 sm:h-[70px]">
+            <a
+              href="#top"
+              className="justify-self-start"
+              aria-label="PMGO SA Fall home"
+            >
+              <img
+                src={assets.pubgLogo}
+                alt="PUBG Mobile Esports"
+                className="h-9 w-11 object-contain opacity-95 sm:h-11 sm:w-14"
+              />
+            </a>
 
-          <a href="#top" className="justify-self-center" aria-label="Xtreme Energy Drink">
-            <img
-              src={titleSponsor.logo}
-              alt={titleSponsor.name}
-              className="h-9 w-auto object-contain sm:h-10"
-            />
-          </a>
+            <a
+              href="#top"
+              className="justify-self-center"
+              aria-label="Xtreme Energy Drink"
+            >
+              <img
+                src={titleSponsor.logo}
+                alt={titleSponsor.name}
+                className="h-9 w-auto object-contain sm:h-10"
+              />
+            </a>
 
-          <a
-            href="#top"
-            className="justify-self-end"
-            aria-label="PUBG Mobile Global Open South Asia Finals"
-          >
-            <img
-              src={assets.pmgoLogo}
-              alt="PUBG Mobile Global Open South Asia Finals"
-              className="h-9 w-auto max-w-[116px] object-contain opacity-95 sm:h-11 sm:max-w-[156px]"
-            />
-          </a>
+            <a
+              href="#top"
+              className="justify-self-end"
+              aria-label="PUBG Mobile Global Open South Asia Finals"
+            >
+              <img
+                src={assets.pmgoLogo}
+                alt="PUBG Mobile Global Open South Asia Finals"
+                className="h-9 w-auto max-w-[116px] object-contain opacity-95 sm:h-11 sm:max-w-[156px]"
+              />
+            </a>
+          </div>
 
+          <div className="flex h-10 items-center justify-center gap-4 overflow-x-auto border-t border-white/8 text-[11px] font-black uppercase tracking-[0.08em] text-white/72 sm:gap-8 sm:text-xs">
+            <a href="#tickets" className="shrink-0 transition hover:text-white">
+              Tickets
+            </a>
+            <a href="#details" className="shrink-0 transition hover:text-white">
+              Details
+            </a>
+            <a href="#teams" className="shrink-0 transition hover:text-white">
+              Teams
+            </a>
+            <a href="#schedule" className="shrink-0 transition hover:text-white">
+              Schedule
+            </a>
+            <a href="#media" className="shrink-0 transition hover:text-white">
+              Media
+            </a>
+          </div>
         </nav>
       </header>
 
       <section
         id="top"
-        className="relative min-h-[100svh] overflow-hidden pt-16"
+        className="relative min-h-[100svh] overflow-hidden pt-[106px] sm:pt-[110px]"
         data-qa="hero"
       >
         <img
@@ -793,7 +818,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="relative z-10 border-t border-white/10 bg-[#f4f4f1] px-4 py-5 text-[#10131a] sm:px-6 lg:px-8">
+      <footer className="relative z-10 border-t border-white/10 bg-[#050912] px-4 py-5 text-white sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div className="max-w-[420px]">
             <img
@@ -817,7 +842,9 @@ export default function Home() {
                   key={sponsor.name}
                   src={sponsor.logo}
                   alt={`${sponsor.name} - ${sponsor.role}`}
-                  className="h-7 w-auto max-w-[92px] object-contain"
+                  className={`h-7 w-auto max-w-[92px] object-contain ${
+                    sponsor.invertOnDark ? 'brightness-0 invert' : ''
+                  }`}
                   loading="lazy"
                   decoding="async"
                 />
@@ -825,7 +852,7 @@ export default function Home() {
             </div>
             <a
               href="/terms"
-              className="text-[10px] font-black uppercase tracking-[0.18em] text-[#10131a]/64 underline-offset-4 transition hover:text-[#10131a] hover:underline"
+              className="text-[10px] font-black uppercase tracking-[0.18em] text-white/58 underline-offset-4 transition hover:text-white hover:underline"
             >
               Terms & Conditions
             </a>
