@@ -1,5 +1,9 @@
 import { getTicketPlan } from '@/lib/tickets';
-import { getKhaltiSecretKey, khaltiApiBaseUrl } from '@/lib/khalti';
+import {
+  getKhaltiSecretKey,
+  khaltiApiBaseUrl,
+  khaltiRequestTimeoutMs,
+} from '@/lib/khalti';
 import { sendSheetRecord } from '@/lib/sheets';
 
 type KhaltiCustomer = {
@@ -122,6 +126,8 @@ export async function POST(request: Request) {
   const amount = totalAmountNpr * 100;
   const origin = getSiteOrigin(request);
   const orderId = `pmgo-sa-${ticket.id}-${crypto.randomUUID()}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), khaltiRequestTimeoutMs);
 
   let khaltiResponse: Response;
 
@@ -130,6 +136,7 @@ export async function POST(request: Request) {
       `${khaltiApiBaseUrl.replace(/\/+$/, '')}/epayment/initiate/`,
       {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           Authorization: `Key ${secretKey}`,
           'Content-Type': 'application/json',
@@ -164,14 +171,18 @@ export async function POST(request: Request) {
         }),
       },
     );
-  } catch {
+  } catch (error) {
     return Response.json(
       {
         error:
-          'Khalti could not be reached from the local preview. Please check internet access and try again.',
+          error instanceof DOMException && error.name === 'AbortError'
+            ? 'Khalti is taking too long to respond. Please try again in a moment.'
+            : 'Khalti could not be reached right now. Please try again.',
       },
       { status: 502 },
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const payload = (await khaltiResponse.json().catch(() => ({}))) as {

@@ -1,5 +1,9 @@
 import { sendSheetRecord } from '@/lib/sheets';
-import { getKhaltiSecretKey, khaltiApiBaseUrl } from '@/lib/khalti';
+import {
+  getKhaltiSecretKey,
+  khaltiApiBaseUrl,
+  khaltiRequestTimeoutMs,
+} from '@/lib/khalti';
 
 type LookupRequestBody = {
   pidx?: string;
@@ -34,6 +38,9 @@ export async function POST(request: Request) {
     );
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), khaltiRequestTimeoutMs);
+
   let khaltiResponse: Response;
 
   try {
@@ -41,6 +48,7 @@ export async function POST(request: Request) {
       `${khaltiApiBaseUrl.replace(/\/+$/, '')}/epayment/lookup/`,
       {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           Authorization: `Key ${secretKey}`,
           'Content-Type': 'application/json',
@@ -48,14 +56,18 @@ export async function POST(request: Request) {
         body: JSON.stringify({ pidx }),
       },
     );
-  } catch {
+  } catch (error) {
     return Response.json(
       {
         error:
-          'Khalti could not be reached from the local preview. Please check internet access and try again.',
+          error instanceof DOMException && error.name === 'AbortError'
+            ? 'Khalti verification is taking too long. Please refresh in a moment.'
+            : 'Khalti could not be reached right now. Please try again.',
       },
       { status: 502 },
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const payload = (await khaltiResponse.json().catch(() => ({}))) as Record<
