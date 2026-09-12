@@ -297,3 +297,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+function authorizeMailApp() {
+  Logger.log(MailApp.getRemainingDailyQuota());
+}
