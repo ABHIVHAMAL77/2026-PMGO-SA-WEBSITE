@@ -4,8 +4,6 @@ import {
   CheckCircle2,
   Clock3,
   MapPin,
-  Ticket,
-  Trophy,
   UsersRound,
 } from 'lucide-react';
 
@@ -62,7 +60,7 @@ const titleSponsor = {
   logo: '/sponsor-xtreme-energy.png',
 };
 
-const eventSponsors = [
+const footerSponsors = [
   {
     name: 'Holiday Inn Express',
     role: 'Hospitality Partner',
@@ -382,54 +380,40 @@ export default function Home() {
     <main className="relative min-h-screen overflow-hidden bg-[#050a16] text-white">
       <LazyThreeStage />
 
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#050912]/78 backdrop-blur-xl">
-        <nav className="mx-auto flex h-16 max-w-[1500px] items-center justify-between px-4 sm:px-6 lg:px-8">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#050912]/82 backdrop-blur-xl">
+        <nav className="mx-auto grid h-16 max-w-[1500px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:h-[72px] sm:px-6 lg:px-8">
           <a
             href="#top"
-            className="flex min-w-0 items-center gap-3"
+            className="justify-self-start"
             aria-label="PMGO SA Fall home"
           >
             <img
               src={assets.pubgLogo}
               alt="PUBG Mobile Esports"
-              className="h-9 w-10 object-contain"
+              className="h-9 w-11 object-contain opacity-95 sm:h-11 sm:w-14"
             />
-            <span className="h-8 w-px bg-white/18" aria-hidden="true" />
+          </a>
+
+          <a href="#top" className="justify-self-center" aria-label="Xtreme Energy Drink">
+            <img
+              src={titleSponsor.logo}
+              alt={titleSponsor.name}
+              className="h-9 w-auto object-contain sm:h-10"
+            />
+          </a>
+
+          <a
+            href="#top"
+            className="justify-self-end"
+            aria-label="PUBG Mobile Global Open South Asia Finals"
+          >
             <img
               src={assets.pmgoLogo}
               alt="PUBG Mobile Global Open South Asia Finals"
-              className="hidden h-9 w-auto max-w-[142px] object-contain sm:block"
+              className="h-9 w-auto max-w-[116px] object-contain opacity-95 sm:h-11 sm:max-w-[156px]"
             />
-            <span className="block truncate text-sm font-black uppercase tracking-[0.12em] sm:hidden">
-              PMGO SA
-            </span>
           </a>
 
-          <div className="hidden items-center gap-5 text-xs font-black uppercase tracking-[0.08em] text-white/72 lg:flex xl:gap-8 xl:text-sm">
-            <a href="#tickets" className="transition hover:text-white">
-              Tickets
-            </a>
-            <a href="#details" className="transition hover:text-white">
-              Details
-            </a>
-            <a href="#teams" className="transition hover:text-white">
-              Teams
-            </a>
-            <a href="#schedule" className="transition hover:text-white">
-              Schedule
-            </a>
-            <a href="#media" className="transition hover:text-white">
-              Media
-            </a>
-          </div>
-
-          <a
-            href="#tickets"
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-black uppercase tracking-[0.05em] text-[#071123] transition hover:bg-cyan-100"
-          >
-            <Ticket className="size-4" aria-hidden="true" />
-            Tickets
-          </a>
         </nav>
       </header>
 
@@ -560,47 +544,6 @@ export default function Home() {
                 </article>
               );
             })}
-            <article className="depth-panel overflow-hidden rounded-lg border border-cyan-200/25 bg-[linear-gradient(135deg,rgba(7,14,31,0.94),rgba(8,24,42,0.9))] p-5 backdrop-blur-md sm:col-span-2">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
-                <div className="lg:w-[30%]">
-                  <Trophy className="size-6 text-red-300" aria-hidden="true" />
-                  <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-cyan-100/58">
-                    {titleSponsor.role}
-                  </p>
-                  <div className="mt-3 rounded-md border border-cyan-200/30 bg-[#071228] p-4 shadow-[0_0_38px_rgba(104,232,255,0.12)]">
-                    <img
-                      src={titleSponsor.logo}
-                      alt={titleSponsor.name}
-                      className="h-16 w-full object-contain"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid flex-1 grid-cols-2 gap-3 md:grid-cols-4">
-                  {eventSponsors.map((sponsor) => (
-                    <div
-                      key={sponsor.name}
-                      className="rounded-md border border-white/10 bg-white/[0.05] p-3"
-                    >
-                      <div className="flex h-14 items-center justify-center rounded bg-white px-3 py-2">
-                        <img
-                          src={sponsor.logo}
-                          alt={sponsor.name}
-                          className="max-h-10 w-full object-contain"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </div>
-                      <p className="mt-3 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-100/58">
-                        {sponsor.role}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </article>
           </div>
         </div>
       </section>
@@ -850,9 +793,9 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="relative z-10 border-t border-white/10 bg-[#030712] px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[minmax(0,1.05fr)_minmax(300px,0.95fr)] md:items-start">
-          <div className="max-w-[720px]">
+      <footer className="relative z-10 border-t border-white/10 bg-[#f4f4f1] px-4 py-5 text-[#10131a] sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1500px] flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-[420px]">
             <img
               src={assets.esportsCounty}
               alt="Production credits: Krafton, Level Infinite, Lightspeed Studios, and Esports County"
@@ -860,12 +803,30 @@ export default function Home() {
             />
           </div>
 
-          <div className="md:justify-self-end md:self-center">
+          <div className="flex flex-col gap-4 md:items-end">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 md:justify-end">
+              <img
+                src={titleSponsor.logo}
+                alt={titleSponsor.name}
+                className="h-8 w-auto object-contain"
+                loading="lazy"
+                decoding="async"
+              />
+              {footerSponsors.map((sponsor) => (
+                <img
+                  key={sponsor.name}
+                  src={sponsor.logo}
+                  alt={`${sponsor.name} - ${sponsor.role}`}
+                  className="h-7 w-auto max-w-[92px] object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ))}
+            </div>
             <a
               href="/terms"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-cyan-200/28 bg-white/[0.06] px-5 text-sm font-black uppercase tracking-[0.16em] text-cyan-100 transition hover:bg-cyan-100 hover:text-[#071123]"
+              className="text-[10px] font-black uppercase tracking-[0.18em] text-[#10131a]/64 underline-offset-4 transition hover:text-[#10131a] hover:underline"
             >
-              <Ticket className="size-4" aria-hidden="true" />
               Terms & Conditions
             </a>
           </div>
