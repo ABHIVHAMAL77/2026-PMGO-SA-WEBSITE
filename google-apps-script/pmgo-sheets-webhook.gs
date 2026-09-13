@@ -724,33 +724,15 @@ function buildTicketTemplateAssets(data) {
 
 function exportSlidePng(presentationId, pageObjectId, ticketId) {
   const token = ScriptApp.getOAuthToken();
-  const thumbnailEndpoint =
-    'https://slides.googleapis.com/v1/presentations/' +
+  const exportUrl =
+    'https://docs.google.com/presentation/d/' +
     encodeURIComponent(presentationId) +
-    '/pages/' +
+    '/export/png?id=' +
+    encodeURIComponent(presentationId) +
+    '&pageid=' +
     encodeURIComponent(pageObjectId) +
-    '/thumbnail?thumbnailProperties.mimeType=PNG&thumbnailProperties.thumbnailSize=LARGE';
-  const thumbnailResponse = UrlFetchApp.fetch(thumbnailEndpoint, {
-    headers: {
-      Authorization: 'Bearer ' + token,
-    },
-    muteHttpExceptions: true,
-  });
-
-  if (thumbnailResponse.getResponseCode() >= 400) {
-    throw new Error(
-      'Ticket slide thumbnail could not be generated: ' +
-        thumbnailResponse.getContentText(),
-    );
-  }
-
-  const thumbnail = JSON.parse(thumbnailResponse.getContentText());
-
-  if (!thumbnail.contentUrl) {
-    throw new Error('Ticket slide thumbnail URL missing.');
-  }
-
-  const imageResponse = UrlFetchApp.fetch(thumbnail.contentUrl, {
+    '&format=png';
+  const imageResponse = UrlFetchApp.fetch(exportUrl, {
     headers: {
       Authorization: 'Bearer ' + token,
     },
