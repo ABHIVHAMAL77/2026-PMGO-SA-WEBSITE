@@ -170,9 +170,11 @@ function sendTicketEmailForRow(sheet, rowNumber) {
     const subject =
       rowData['Event Date'] +
       ' - Your PMGO South Asia Fall 2026 Ticket';
-    const htmlBody = buildTicketEmailHtml(rowData);
+    const ticketAssets = buildTicketEmailAssets(rowData);
+    const inlineImageKeys = Object.keys(ticketAssets.inlineImages);
+    const htmlBody = buildTicketEmailHtml(rowData, inlineImageKeys);
     const textBody = buildTicketEmailText(rowData);
-    const attachments = buildTicketAttachments(rowData);
+    const attachments = ticketAssets.attachments;
     const attachmentNames = attachments.map(function (attachment) {
       return attachment.getName();
     });
@@ -180,6 +182,7 @@ function sendTicketEmailForRow(sheet, rowNumber) {
     MailApp.sendEmail({
       attachments: attachments,
       htmlBody: htmlBody,
+      inlineImages: ticketAssets.inlineImages,
       name: 'PMGO South Asia Finals',
       replyTo: 'abhi@esportscounty.com',
       subject: subject,
@@ -193,6 +196,7 @@ function sendTicketEmailForRow(sheet, rowNumber) {
     return {
       attachmentCount: attachments.length,
       attachments: attachmentNames,
+      inlineImageCount: inlineImageKeys.length,
       status: 'sent',
       to: buyerEmail,
     };
@@ -225,7 +229,7 @@ function setByHeader(sheet, rowNumber, header, value) {
   }
 }
 
-function buildTicketEmailHtml(data) {
+function buildTicketEmailHtml(data, inlineImageKeys) {
   const attendeeHtml = escapeHtml(data['Attendee Details'] || '')
     .split('\n')
     .filter(Boolean)
@@ -249,6 +253,7 @@ function buildTicketEmailHtml(data) {
     escapeHtml(data['Buyer Name'] || 'there') +
     ',</p>' +
     '<p style="margin:0 0 20px;font-size:15px;line-height:1.6">Your access to the 2026 PMGO South Asia Finals is confirmed. Bring your real ID card for gate verification if required.</p>' +
+    buildInlineTicketPreviewHtml(inlineImageKeys) +
     '<p style="margin:0 0 20px;font-size:15px;line-height:1.6"><strong>Your printable ticket PDF is attached to this email.</strong></p>' +
     '<div style="border:1px solid #dbe3f0;border-radius:10px;overflow:hidden">' +
     ticketDetailRow('Ticket', data['Ticket Name']) +
@@ -266,6 +271,28 @@ function buildTicketEmailHtml(data) {
     '</div>' +
     '<div style="background:#0b1d74;color:#ffffff;text-align:center;padding:14px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">2026 PMGO South Asia Finals</div>' +
     '</div>' +
+    '</div>'
+  );
+}
+
+function buildInlineTicketPreviewHtml(inlineImageKeys) {
+  const imageHtml = (inlineImageKeys || [])
+    .map(function (key) {
+      return (
+        '<img src="cid:' +
+        escapeHtml(key) +
+        '" alt="PMGO ticket" style="display:block;width:100%;max-width:560px;height:auto;margin:0 auto 14px;border:0">'
+      );
+    })
+    .join('');
+
+  if (!imageHtml) {
+    return '';
+  }
+
+  return (
+    '<div style="margin:0 0 20px;text-align:center">' +
+    imageHtml +
     '</div>'
   );
 }
@@ -303,25 +330,29 @@ function buildTicketEmailText(data) {
   ].join('\n');
 }
 
-function buildTicketAttachments(data) {
-  let templateAttachments = [];
+function buildTicketEmailAssets(data) {
+  let templateAssets = null;
 
   try {
-    templateAttachments = buildTicketTemplateAttachments(data);
+    templateAssets = buildTicketTemplateAssets(data);
   } catch (error) {
-    templateAttachments = [];
+    templateAssets = null;
   }
 
-  if (templateAttachments.length) {
-    return templateAttachments;
+  if (templateAssets && templateAssets.attachments.length) {
+    return templateAssets;
   }
 
-  return [buildFallbackTicketPdf(data)];
+  return {
+    attachments: [buildFallbackTicketPdf(data)],
+    inlineImages: {},
+  };
 }
 
-function buildTicketTemplateAttachments(data) {
+function buildTicketTemplateAssets(data) {
   const attendees = parseAttendees(data);
   const attachments = [];
+  const inlineImages = {};
 
   attendees.forEach(function (attendee, index) {
     const ticketId = buildTicketId(data, index);
@@ -332,6 +363,8 @@ function buildTicketTemplateAttachments(data) {
 
     try {
       const presentation = SlidesApp.openById(copyId);
+      const firstSlide = presentation.getSlides()[0];
+      const firstSlideObjectId = firstSlide.getObjectId();
 
       presentation.replaceAllText('{{NAME}}', attendee.name || data['Buyer Name'] || 'Guest');
       presentation.replaceAllText('{{DATE}}', data['Event Date'] || '');
@@ -346,12 +379,47 @@ function buildTicketTemplateAttachments(data) {
           .getAs(MimeType.PDF)
           .setName('PMGO-SA-Fall-2026-Ticket-' + safeFileName(ticketId) + '.pdf'),
       );
+
+      try {
+        inlineImages['ticketPreview' + (index + 1)] = exportSlidePng(
+          copyId,
+          firstSlideObjectId,
+          'PMGO-SA-Fall-2026-Ticket-' + safeFileName(ticketId) + '.png',
+        );
+      } catch (error) {
+        Logger.log('Ticket preview image skipped: ' + error);
+      }
     } finally {
       DriveApp.getFileById(copyId).setTrashed(true);
     }
   });
 
-  return attachments;
+  return {
+    attachments: attachments,
+    inlineImages: inlineImages,
+  };
+}
+
+function exportSlidePng(presentationId, slideObjectId, fileName) {
+  const url =
+    'https://docs.google.com/presentation/d/' +
+    presentationId +
+    '/export/png?id=' +
+    presentationId +
+    '&pageid=' +
+    slideObjectId;
+  const response = UrlFetchApp.fetch(url, {
+    headers: {
+      Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
+    },
+    muteHttpExceptions: true,
+  });
+
+  if (response.getResponseCode() >= 400) {
+    throw new Error('Ticket preview image could not be exported.');
+  }
+
+  return response.getBlob().setName(fileName);
 }
 
 function replaceQrPlaceholder(presentation, qrValue) {
@@ -566,6 +634,7 @@ function authorizeMailApp() {
 
 function authorizeTicketServices() {
   Logger.log(MailApp.getRemainingDailyQuota());
+  ScriptApp.getOAuthToken();
   Logger.log(DriveApp.getFileById(TICKET_TEMPLATE_PRESENTATION_ID).getName());
   Logger.log(SlidesApp.openById(TICKET_TEMPLATE_PRESENTATION_ID).getName());
   Logger.log(
