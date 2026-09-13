@@ -173,6 +173,9 @@ function sendTicketEmailForRow(sheet, rowNumber) {
     const htmlBody = buildTicketEmailHtml(rowData);
     const textBody = buildTicketEmailText(rowData);
     const attachments = buildTicketAttachments(rowData);
+    const attachmentNames = attachments.map(function (attachment) {
+      return attachment.getName();
+    });
 
     MailApp.sendEmail({
       attachments: attachments,
@@ -187,7 +190,12 @@ function sendTicketEmailForRow(sheet, rowNumber) {
     setByHeader(sheet, rowNumber, 'Ticket Email Sent At', new Date());
     setByHeader(sheet, rowNumber, 'Ticket Email Error', '');
 
-    return { status: 'sent', to: buyerEmail };
+    return {
+      attachmentCount: attachments.length,
+      attachments: attachmentNames,
+      status: 'sent',
+      to: buyerEmail,
+    };
   } catch (error) {
     setByHeader(sheet, rowNumber, 'Ticket Email Error', String(error));
     return { status: 'error', message: String(error) };
@@ -296,7 +304,13 @@ function buildTicketEmailText(data) {
 }
 
 function buildTicketAttachments(data) {
-  const templateAttachments = buildTicketTemplateAttachments(data);
+  let templateAttachments = [];
+
+  try {
+    templateAttachments = buildTicketTemplateAttachments(data);
+  } catch (error) {
+    templateAttachments = [];
+  }
 
   if (templateAttachments.length) {
     return templateAttachments;
