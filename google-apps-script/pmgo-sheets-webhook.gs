@@ -36,8 +36,6 @@ function doPost(event) {
         payload.eventDateLabel || payload.eventDate || '',
       );
 
-      refreshTicketDashboard(workbook, sheet);
-
       return jsonResponse({ ok: true, capacity: capacity }, 200);
     }
 
@@ -87,7 +85,8 @@ function doPost(event) {
         appendByHeader(sheet, valuesByHeader);
       }
 
-      refreshTicketDashboard(workbook, sheet);
+      // Dashboard formulas recalculate from Tickets rows. Do not rewrite the
+      // dashboard on every webhook request, or manual formulas will be erased.
     } else if (body.type === 'media') {
       appendByHeader(workbook.getSheetByName(MEDIA_SHEET_NAME), {
         'Full Name': payload.fullName || '',
