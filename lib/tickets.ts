@@ -1,5 +1,7 @@
 export type TicketPlanId = 'general-day-pass';
 
+export const DAILY_TICKET_CAPACITY = 620;
+
 export type TicketPlan = {
   id: TicketPlanId;
   name: string;

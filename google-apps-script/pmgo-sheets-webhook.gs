@@ -25,6 +25,16 @@ function doPost(event) {
     const payload = body.payload || {};
     let emailResult = null;
 
+    if (body.type === 'ticket-capacity') {
+      const sheet = workbook.getSheetByName(TICKET_SHEET_NAME);
+      const capacity = getTicketCapacityForDate(
+        sheet,
+        payload.eventDateLabel || payload.eventDate || '',
+      );
+
+      return jsonResponse({ ok: true, capacity: capacity }, 200);
+    }
+
     if (body.type === 'ticket') {
       const sheet = workbook.getSheetByName(TICKET_SHEET_NAME);
       ensureHeaders(sheet, ['Ticket Email Sent At', 'Ticket Email Error']);
@@ -151,6 +161,47 @@ function ensureHeaders(sheet, requiredHeaders) {
 
 function isCompletedStatus(status) {
   return String(status || '').toLowerCase() === 'completed';
+}
+
+function getTicketCapacityForDate(sheet, eventDate) {
+  const targetDate = normalizeSheetText(eventDate);
+  const result = {
+    eventDate: eventDate,
+    sold: 0,
+  };
+
+  if (!targetDate || sheet.getLastRow() < 2) {
+    return result;
+  }
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const eventDateColumn = headers.indexOf('Event Date');
+  const quantityColumn = headers.indexOf('Quantity');
+  const statusColumn = headers.indexOf('Status');
+
+  if (eventDateColumn === -1 || quantityColumn === -1 || statusColumn === -1) {
+    return result;
+  }
+
+  const rows = sheet
+    .getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn())
+    .getValues();
+
+  rows.forEach(function (row) {
+    const rowEventDate = normalizeSheetText(row[eventDateColumn]);
+    const rowStatus = row[statusColumn];
+
+    if (rowEventDate === targetDate && isCompletedStatus(rowStatus)) {
+      const quantity = Number(row[quantityColumn]) || 0;
+      result.sold += Math.max(0, quantity);
+    }
+  });
+
+  return result;
+}
+
+function normalizeSheetText(value) {
+  return String(value || '').trim().toLowerCase();
 }
 
 function sendTicketEmailForRow(sheet, rowNumber) {

@@ -43,3 +43,44 @@ export async function sendSheetRecord({ payload, type }: SheetRecordInput) {
 
   return { skipped: false };
 }
+
+export async function getTicketDateCapacity(eventDate: string) {
+  const webhookUrl = normalizeWebhookUrl();
+  const secret = process.env.SHEETS_WEBHOOK_SECRET?.trim();
+
+  if (!webhookUrl || !secret) {
+    return null;
+  }
+
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8',
+    },
+    body: JSON.stringify({
+      payload: { eventDate },
+      secret,
+      type: 'ticket-capacity',
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Ticket capacity could not be checked.');
+  }
+
+  const result = (await response.json().catch(() => null)) as {
+    capacity?: {
+      sold?: number;
+    };
+    error?: string;
+    ok?: boolean;
+  } | null;
+
+  if (!result?.ok) {
+    throw new Error(result?.error ?? 'Ticket capacity could not be checked.');
+  }
+
+  return {
+    sold: Number(result.capacity?.sold) || 0,
+  };
+}

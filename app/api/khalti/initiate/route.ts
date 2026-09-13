@@ -1,10 +1,10 @@
-import { getTicketPlan } from '@/lib/tickets';
+import { DAILY_TICKET_CAPACITY, getTicketPlan } from '@/lib/tickets';
 import {
   getKhaltiSecretKey,
   khaltiApiBaseUrl,
   khaltiRequestTimeoutMs,
 } from '@/lib/khalti';
-import { sendSheetRecord } from '@/lib/sheets';
+import { getTicketDateCapacity, sendSheetRecord } from '@/lib/sheets';
 
 type KhaltiCustomer = {
   email?: string;
@@ -118,6 +118,40 @@ export async function POST(request: Request) {
       },
       { status: 400 },
     );
+  }
+
+  let capacityStatus: Awaited<ReturnType<typeof getTicketDateCapacity>> = null;
+
+  try {
+    capacityStatus = await getTicketDateCapacity(eventDateLabel);
+  } catch (error) {
+    return Response.json(
+      {
+        error:
+          'Ticket availability could not be checked right now. Please try again in a moment.',
+      },
+      { status: 503 },
+    );
+  }
+
+  if (capacityStatus) {
+    const remaining = DAILY_TICKET_CAPACITY - capacityStatus.sold;
+
+    if (remaining <= 0) {
+      return Response.json(
+        { error: `${eventDateLabel} is sold out.` },
+        { status: 409 },
+      );
+    }
+
+    if (quantity > remaining) {
+      return Response.json(
+        {
+          error: `Only ${remaining} ticket${remaining === 1 ? '' : 's'} left for ${eventDateLabel}.`,
+        },
+        { status: 409 },
+      );
+    }
   }
 
   const baseAmountNpr = ticket.amountNpr * quantity;
