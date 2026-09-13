@@ -283,7 +283,6 @@ function refreshTicketDashboard(workbook, ticketSheet) {
     dashboardSheet = workbook.insertSheet(DASHBOARD_SHEET_NAME);
   }
 
-  const summary = getTicketSalesSummary(ticketSheet);
   const rows = [
     ['PMGO SA Fall 2026 Ticket Live Dashboard', '', '', '', '', '', '', ''],
     ['Last Updated', new Date(), '', '', '', '', '', ''],
@@ -312,19 +311,8 @@ function refreshTicketDashboard(workbook, ticketSheet) {
     ],
   ];
 
-  EVENT_DATES.forEach(function (eventDate) {
-    const dateSummary = summary[normalizeSheetText(eventDate)];
-
-    rows.push([
-      eventDate,
-      dateSummary.completedTickets,
-      Math.max(0, DAILY_TICKET_CAPACITY - dateSummary.completedTickets),
-      dateSummary.pendingTickets,
-      dateSummary.completedOrders,
-      dateSummary.pendingOrders,
-      dateSummary.grossNpr,
-      dateSummary.vatNpr,
-    ]);
+  buildTicketDashboardFormulaRows(ticketSheet).forEach(function (formulaRow) {
+    rows.push(formulaRow);
   });
 
   dashboardSheet.clear();
@@ -351,6 +339,156 @@ function refreshTicketDashboard(workbook, ticketSheet) {
   dashboardSheet.getRange(7, 4, EVENT_DATES.length, 1).setBackground('#fff4d8');
   dashboardSheet.getRange(1, 1, rows.length, rows[0].length).setVerticalAlignment('middle');
   dashboardSheet.autoResizeColumns(1, rows[0].length);
+}
+
+function buildTicketDashboardFormulaRows(ticketSheet) {
+  const ranges = getTicketDashboardRanges(ticketSheet);
+
+  return EVENT_DATES.map(function (eventDate, index) {
+    const rowNumber = 7 + index;
+
+    return [
+      eventDate,
+      completedSumFormula(ranges, ranges.quantity, rowNumber),
+      '=MAX(0,' + DAILY_TICKET_CAPACITY + '-B' + rowNumber + ')',
+      pendingSumFormula(ranges, ranges.quantity, rowNumber),
+      completedCountFormula(ranges, rowNumber),
+      pendingCountFormula(ranges, rowNumber),
+      completedSumFormula(ranges, ranges.amount, rowNumber),
+      completedSumFormula(ranges, ranges.vat, rowNumber),
+    ];
+  });
+}
+
+function getTicketDashboardRanges(ticketSheet) {
+  const sheetName = quoteSheetName(ticketSheet.getName());
+
+  return {
+    amount: ticketColumnRange(ticketSheet, sheetName, 'Total Amount NPR'),
+    date: ticketColumnRange(ticketSheet, sheetName, 'Event Date'),
+    quantity: ticketColumnRange(ticketSheet, sheetName, 'Quantity'),
+    status: ticketColumnRange(ticketSheet, sheetName, 'Status'),
+    vat: ticketColumnRange(ticketSheet, sheetName, 'VAT NPR'),
+  };
+}
+
+function ticketColumnRange(ticketSheet, quotedSheetName, header) {
+  const headers = ticketSheet.getRange(1, 1, 1, ticketSheet.getLastColumn()).getValues()[0];
+  const columnIndex = headers.indexOf(header) + 1;
+
+  if (!columnIndex) {
+    return null;
+  }
+
+  const columnLetter = columnToLetter(columnIndex);
+  return quotedSheetName + '!$' + columnLetter + '$2:$' + columnLetter;
+}
+
+function quoteSheetName(sheetName) {
+  return "'" + String(sheetName).replace(/'/g, "''") + "'";
+}
+
+function columnToLetter(columnIndex) {
+  let column = columnIndex;
+  let letter = '';
+
+  while (column > 0) {
+    const remainder = (column - 1) % 26;
+    letter = String.fromCharCode(65 + remainder) + letter;
+    column = Math.floor((column - remainder - 1) / 26);
+  }
+
+  return letter;
+}
+
+function dateMatchFormula(ranges, rowNumber) {
+  return (
+    'LOWER(ARRAYFORMULA(IFERROR(TEXT(' +
+    ranges.date +
+    ',"dd mmm yyyy"),TO_TEXT(' +
+    ranges.date +
+    '))))=LOWER($A' +
+    rowNumber +
+    ')'
+  );
+}
+
+function completedStatusFormula(ranges) {
+  return 'ARRAYFORMULA(LOWER(TO_TEXT(' + ranges.status + ')))="completed"';
+}
+
+function pendingStatusFormula(ranges) {
+  return (
+    'ARRAYFORMULA(LOWER(TO_TEXT(' +
+    ranges.status +
+    ')))<>"completed",ARRAYFORMULA(LEN(TO_TEXT(' +
+    ranges.status +
+    ')))>0'
+  );
+}
+
+function completedSumFormula(ranges, valueRange, rowNumber) {
+  if (!ranges.date || !ranges.status || !valueRange) {
+    return 0;
+  }
+
+  return (
+    '=IFERROR(SUM(FILTER(' +
+    valueRange +
+    ',' +
+    dateMatchFormula(ranges, rowNumber) +
+    ',' +
+    completedStatusFormula(ranges) +
+    ')),0)'
+  );
+}
+
+function pendingSumFormula(ranges, valueRange, rowNumber) {
+  if (!ranges.date || !ranges.status || !valueRange) {
+    return 0;
+  }
+
+  return (
+    '=IFERROR(SUM(FILTER(' +
+    valueRange +
+    ',' +
+    dateMatchFormula(ranges, rowNumber) +
+    ',' +
+    pendingStatusFormula(ranges) +
+    ')),0)'
+  );
+}
+
+function completedCountFormula(ranges, rowNumber) {
+  if (!ranges.date || !ranges.status) {
+    return 0;
+  }
+
+  return (
+    '=IFERROR(COUNTA(FILTER(' +
+    ranges.status +
+    ',' +
+    dateMatchFormula(ranges, rowNumber) +
+    ',' +
+    completedStatusFormula(ranges) +
+    ')),0)'
+  );
+}
+
+function pendingCountFormula(ranges, rowNumber) {
+  if (!ranges.date || !ranges.status) {
+    return 0;
+  }
+
+  return (
+    '=IFERROR(COUNTA(FILTER(' +
+    ranges.status +
+    ',' +
+    dateMatchFormula(ranges, rowNumber) +
+    ',' +
+    pendingStatusFormula(ranges) +
+    ')),0)'
+  );
 }
 
 function normalizeSheetText(value) {
