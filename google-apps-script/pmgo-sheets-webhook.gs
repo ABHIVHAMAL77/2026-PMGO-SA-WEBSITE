@@ -1,5 +1,7 @@
 const TICKET_SHEET_NAME = 'Tickets';
 const MEDIA_SHEET_NAME = 'Media Applications';
+const TICKET_TEMPLATE_PRESENTATION_ID =
+  '1GZIQXDTXRRQh5qnf87DgSD0LFN83GDrNlc7dzq23EeI';
 
 function doPost(event) {
   try {
@@ -294,31 +296,110 @@ function buildTicketEmailText(data) {
 }
 
 function buildTicketAttachments(data) {
+  const templateAttachments = buildTicketTemplateAttachments(data);
+
+  if (templateAttachments.length) {
+    return templateAttachments;
+  }
+
+  return [buildFallbackTicketPdf(data)];
+}
+
+function buildTicketTemplateAttachments(data) {
+  const attendees = parseAttendees(data);
+  const attachments = [];
+
+  attendees.forEach(function (attendee, index) {
+    const ticketId = buildTicketId(data, index);
+    const copyFile = DriveApp.getFileById(TICKET_TEMPLATE_PRESENTATION_ID).makeCopy(
+      'PMGO Ticket ' + ticketId,
+    );
+    const copyId = copyFile.getId();
+
+    try {
+      const presentation = SlidesApp.openById(copyId);
+
+      presentation.replaceAllText('{{NAME}}', attendee.name || data['Buyer Name'] || 'Guest');
+      presentation.replaceAllText('{{DATE}}', data['Event Date'] || '');
+      presentation.replaceAllText('{{TICKET_ID}}', ticketId);
+      presentation.replaceAllText('{{TICKET ID }}', ticketId);
+      presentation.replaceAllText('{{TICKET ID}}', ticketId);
+      replaceQrPlaceholder(presentation, buildTicketQrValue(data, attendee, index, ticketId));
+      presentation.saveAndClose();
+
+      attachments.push(
+        DriveApp.getFileById(copyId)
+          .getAs(MimeType.PDF)
+          .setName('PMGO-SA-Fall-2026-Ticket-' + safeFileName(ticketId) + '.pdf'),
+      );
+    } finally {
+      DriveApp.getFileById(copyId).setTrashed(true);
+    }
+  });
+
+  return attachments;
+}
+
+function replaceQrPlaceholder(presentation, qrValue) {
+  const qrBlob = createQrBlob(qrValue);
+  const slides = presentation.getSlides();
+
+  for (let slideIndex = 0; slideIndex < slides.length; slideIndex += 1) {
+    const slide = slides[slideIndex];
+    const pageElements = slide.getPageElements();
+
+    for (let elementIndex = 0; elementIndex < pageElements.length; elementIndex += 1) {
+      const element = pageElements[elementIndex];
+
+      if (
+        element.getPageElementType() === SlidesApp.PageElementType.SHAPE &&
+        element.asShape().getText().asString().indexOf('{{QR}}') !== -1
+      ) {
+        const left = element.getLeft();
+        const top = element.getTop();
+        const width = element.getWidth();
+        const height = element.getHeight();
+
+        element.remove();
+        slide.insertImage(qrBlob, left, top, width, height);
+        return;
+      }
+    }
+  }
+}
+
+function createQrBlob(value) {
+  const url =
+    'https://quickchart.io/qr?size=420&margin=1&text=' +
+    encodeURIComponent(value);
+  const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+
+  if (response.getResponseCode() >= 400) {
+    throw new Error('QR code could not be generated.');
+  }
+
+  return response.getBlob().setName('ticket-qr.png');
+}
+
+function buildFallbackTicketPdf(data) {
   const html = buildTicketPdfHtml(data);
   const fileName =
     'PMGO-SA-Fall-2026-Ticket-' +
     safeFileName(data['Khalti PIDX'] || data['Order ID'] || 'confirmed') +
     '.pdf';
 
-  return [
-    HtmlService.createHtmlOutput(html)
-      .getBlob()
-      .getAs(MimeType.PDF)
-      .setName(fileName),
-  ];
+  return HtmlService.createHtmlOutput(html)
+    .getBlob()
+    .getAs(MimeType.PDF)
+    .setName(fileName);
 }
 
 function buildTicketPdfHtml(data) {
   const attendees = parseAttendees(data);
   const ticketPages = attendees
     .map(function (attendee, index) {
-      const ticketCode = [
-        'PMGO-SA-2026',
-        data['Event Date'] || '',
-        data['Khalti PIDX'] || '',
-        index + 1,
-        attendee.name || '',
-      ].join('|');
+      const ticketId = buildTicketId(data, index);
+      const ticketCode = buildTicketQrValue(data, attendee, index, ticketId);
       const qrDataUri = createQrDataUri(ticketCode);
 
       return (
@@ -340,6 +421,7 @@ function buildTicketPdfHtml(data) {
         pdfMeta('Ticket', data['Ticket Name']) +
         pdfMeta('Quantity', data.Quantity) +
         pdfMeta('Amount', 'NPR ' + (data['Total Amount NPR'] || '')) +
+        pdfMeta('Ticket ID', ticketId) +
         pdfMeta('Transaction', data['Transaction ID']) +
         pdfMeta('Khalti PIDX', data['Khalti PIDX']) +
         pdfMeta('Contact', attendee.email || data['Buyer Email']) +
@@ -365,6 +447,30 @@ function buildTicketPdfHtml(data) {
     ticketPages +
     '</body></html>'
   );
+}
+
+function buildTicketId(data, index) {
+  const date = String(data['Event Date'] || '')
+    .replace(/\s+/g, '')
+    .toUpperCase();
+  const reference = String(data['Khalti PIDX'] || data['Order ID'] || 'TICKET')
+    .replace(/[^a-z0-9]/gi, '')
+    .toUpperCase()
+    .slice(-8);
+
+  return ['PMGO', date || '2026', reference || 'TICKET', index + 1].join('-');
+}
+
+function buildTicketQrValue(data, attendee, index, ticketId) {
+  return [
+    'PMGO-SA-FALL-2026',
+    'TICKET_ID=' + ticketId,
+    'DATE=' + (data['Event Date'] || ''),
+    'NAME=' + (attendee.name || data['Buyer Name'] || ''),
+    'PIDX=' + (data['Khalti PIDX'] || ''),
+    'TXN=' + (data['Transaction ID'] || ''),
+    'NO=' + (index + 1),
+  ].join('|');
 }
 
 function pdfMeta(label, value) {
@@ -446,6 +552,8 @@ function authorizeMailApp() {
 
 function authorizeTicketServices() {
   Logger.log(MailApp.getRemainingDailyQuota());
+  Logger.log(DriveApp.getFileById(TICKET_TEMPLATE_PRESENTATION_ID).getName());
+  Logger.log(SlidesApp.openById(TICKET_TEMPLATE_PRESENTATION_ID).getName());
   Logger.log(
     UrlFetchApp.fetch('https://quickchart.io/qr?text=test&size=80', {
       muteHttpExceptions: true,
