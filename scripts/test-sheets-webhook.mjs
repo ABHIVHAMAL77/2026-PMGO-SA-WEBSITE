@@ -39,9 +39,21 @@ if (!webhookUrl || !secret) {
 
 const isTicket = process.argv.includes('--ticket');
 const isTicketUpdate = process.argv.includes('--ticket-update');
+const isWebsiteTicket = process.argv.includes('--website-ticket');
 const isCapacity = process.argv.includes('--capacity');
 const testPidx = `test-pidx-${Date.now()}`;
 const testEmail = process.env.TEST_TICKET_EMAIL ?? 'vpstest@gmail.com';
+const testName = process.env.TEST_TICKET_NAME ?? 'Website Test Buyer';
+const testPhone = process.env.TEST_TICKET_PHONE ?? '9800000000';
+const testDate = process.env.TEST_TICKET_DATE ?? '2026-09-16';
+const testDateLabel = process.env.TEST_TICKET_DATE_LABEL ?? '16 Sep 2026';
+const testQuantity = Math.min(
+  10,
+  Math.max(1, Number(process.env.TEST_TICKET_QUANTITY ?? '1') || 1),
+);
+const baseAmountNpr = 400 * testQuantity;
+const vatAmountNpr = Math.round(baseAmountNpr * 0.13);
+const totalAmountNpr = baseAmountNpr + vatAmountNpr;
 
 const sendRecord = async (type, payload) => {
   const response = await fetch(webhookUrl, {
@@ -63,37 +75,40 @@ const sendRecord = async (type, payload) => {
 };
 
 const ticketPayload = {
-  amountNpr: 452,
-  attendeeDetails: `1. VPS Script Test | ${testEmail} | 9800000000`,
-  baseAmountNpr: 400,
+  amountNpr: totalAmountNpr,
+  attendeeDetails: Array.from({ length: testQuantity }, (_, index) => {
+    const suffix = testQuantity > 1 ? ` ${index + 1}` : '';
+    return `${index + 1}. ${testName}${suffix} | ${testEmail} | ${testPhone}`;
+  }).join('\n'),
+  baseAmountNpr,
   buyerEmail: testEmail,
-  buyerName: 'VPS Script Test',
-  buyerPhone: '9800000000',
+  buyerName: testName,
+  buyerPhone: testPhone,
   event: 'Checkout Started',
-  eventDate: '2026-09-16',
-  eventDateLabel: '16 Sep 2026',
-  orderId: 'vps-script-test',
+  eventDate: testDate,
+  eventDateLabel: testDateLabel,
+  orderId: `website-test-${Date.now()}`,
   pidx: testPidx,
-  quantity: 1,
+  quantity: testQuantity,
   status: 'Pending',
   ticketId: 'general-day-pass',
   ticketName: 'General Pass',
-  totalAmountNpr: 452,
-  vatAmountNpr: 52,
+  totalAmountNpr,
+  vatAmountNpr,
 };
 
 if (isCapacity) {
   await sendRecord('ticket-capacity', {
-    eventDate: '16 Sep 2026',
+    eventDate: testDateLabel,
   });
-} else if (isTicketUpdate) {
+} else if (isTicketUpdate || isWebsiteTicket) {
   await sendRecord('ticket', ticketPayload);
   await sendRecord('ticket', {
     event: 'Payment Lookup',
-    khaltiMobile: '9800000000',
+    khaltiMobile: testPhone,
     pidx: testPidx,
     status: 'Completed',
-    totalAmountNpr: 452,
+    totalAmountNpr,
     transactionId: 'test-transaction-id',
   });
 } else if (isTicket) {
