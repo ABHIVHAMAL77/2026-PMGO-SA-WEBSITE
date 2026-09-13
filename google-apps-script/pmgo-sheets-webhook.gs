@@ -391,7 +391,11 @@ function sendTicketEmailForRow(sheet, rowNumber) {
       eventDate +
       ' - Your PMGO South Asia Fall 2026 Ticket';
     const ticketAssets = buildTicketEmailAssets(rowData);
-    const ticketCardsHtml = buildEmailTicketCardsHtml(rowData, ticketAssets.inlineImages);
+    const ticketCardsHtml = buildEmailTicketCardsHtml(
+      rowData,
+      ticketAssets.inlineImages,
+      ticketAssets.ticketImageKeys,
+    );
     const inlineImageKeys = Object.keys(ticketAssets.inlineImages);
     const htmlBody = buildTicketEmailHtml(rowData, ticketCardsHtml);
     const textBody = buildTicketEmailText(rowData);
@@ -501,7 +505,23 @@ function buildTicketEmailHtml(data, ticketCardsHtml) {
   );
 }
 
-function buildEmailTicketCardsHtml(data, inlineImages) {
+function buildEmailTicketCardsHtml(data, inlineImages, ticketImageKeys) {
+  if (ticketImageKeys && ticketImageKeys.length) {
+    return (
+      '<div style="margin:0 0 22px;text-align:center">' +
+      ticketImageKeys
+        .map(function (ticketImage) {
+          return (
+            '<img src="cid:' +
+            ticketImage.key +
+            '" alt="PMGO South Asia Fall 2026 ticket" style="display:block;width:100%;max-width:560px;height:auto;margin:0 auto 16px;border:0;border-radius:4px">'
+          );
+        })
+        .join('') +
+      '</div>'
+    );
+  }
+
   const eventDate = formatDisplayDate(data['Event Date']);
   const doorsOpen = getDoorsOpenText(data);
   const attendees = parseAttendees(data);
@@ -638,6 +658,7 @@ function buildTicketEmailAssets(data) {
   return {
     attachments: [buildFallbackTicketPdf(data)],
     inlineImages: {},
+    ticketImageKeys: [],
   };
 }
 
@@ -645,6 +666,7 @@ function buildTicketTemplateAssets(data) {
   const attendees = parseAttendees(data);
   const attachments = [];
   const inlineImages = {};
+  const ticketImageKeys = [];
 
   attendees.forEach(function (attendee, index) {
     const ticketId = buildTicketId(data, index);
@@ -655,6 +677,8 @@ function buildTicketTemplateAssets(data) {
 
     try {
       const presentation = SlidesApp.openById(copyId);
+      const firstSlide = presentation.getSlides()[0];
+      const firstSlideObjectId = firstSlide.getObjectId();
 
       presentation.replaceAllText('{{NAME}}', attendee.name || data['Buyer Name'] || 'Guest');
       presentation.replaceAllText('{{DATE}}', formatDisplayDate(data['Event Date']));
@@ -671,6 +695,21 @@ function buildTicketTemplateAssets(data) {
           .getAs(MimeType.PDF)
           .setName('PMGO-SA-Fall-2026-Ticket-' + safeFileName(ticketId) + '.pdf'),
       );
+
+      try {
+        const ticketImageKey = 'ticketImage' + (index + 1);
+        inlineImages[ticketImageKey] = exportSlidePng(
+          copyId,
+          firstSlideObjectId,
+          ticketId,
+        );
+        ticketImageKeys.push({
+          key: ticketImageKey,
+          ticketId: ticketId,
+        });
+      } catch (imageError) {
+        Logger.log('Ticket slide image skipped: ' + imageError);
+      }
     } finally {
       DriveApp.getFileById(copyId).setTrashed(true);
     }
@@ -679,7 +718,55 @@ function buildTicketTemplateAssets(data) {
   return {
     attachments: attachments,
     inlineImages: inlineImages,
+    ticketImageKeys: ticketImageKeys,
   };
+}
+
+function exportSlidePng(presentationId, pageObjectId, ticketId) {
+  const token = ScriptApp.getOAuthToken();
+  const thumbnailEndpoint =
+    'https://slides.googleapis.com/v1/presentations/' +
+    encodeURIComponent(presentationId) +
+    '/pages/' +
+    encodeURIComponent(pageObjectId) +
+    '/thumbnail?thumbnailProperties.mimeType=PNG&thumbnailProperties.thumbnailSize=LARGE';
+  const thumbnailResponse = UrlFetchApp.fetch(thumbnailEndpoint, {
+    headers: {
+      Authorization: 'Bearer ' + token,
+    },
+    muteHttpExceptions: true,
+  });
+
+  if (thumbnailResponse.getResponseCode() >= 400) {
+    throw new Error(
+      'Ticket slide thumbnail could not be generated: ' +
+        thumbnailResponse.getContentText(),
+    );
+  }
+
+  const thumbnail = JSON.parse(thumbnailResponse.getContentText());
+
+  if (!thumbnail.contentUrl) {
+    throw new Error('Ticket slide thumbnail URL missing.');
+  }
+
+  const imageResponse = UrlFetchApp.fetch(thumbnail.contentUrl, {
+    headers: {
+      Authorization: 'Bearer ' + token,
+    },
+    muteHttpExceptions: true,
+  });
+
+  if (imageResponse.getResponseCode() >= 400) {
+    throw new Error(
+      'Ticket slide image could not be downloaded: ' +
+        imageResponse.getContentText(),
+    );
+  }
+
+  return imageResponse
+    .getBlob()
+    .setName('PMGO-SA-Fall-2026-Ticket-' + safeFileName(ticketId) + '.png');
 }
 
 function replaceQrPlaceholder(presentation, qrValue) {
