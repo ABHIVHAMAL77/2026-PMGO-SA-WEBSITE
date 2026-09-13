@@ -1,7 +1,10 @@
 const TICKET_SHEET_NAME = 'Tickets';
 const MEDIA_SHEET_NAME = 'Media Applications';
+const DASHBOARD_SHEET_NAME = 'Ticket Dashboard';
+const DAILY_TICKET_CAPACITY = 620;
 const TICKET_TEMPLATE_PRESENTATION_ID =
   '1GZIQXDTXRRQh5qnf87DgSD0LFN83GDrNlc7dzq23EeI';
+const EVENT_DATES = ['16 Sep 2026', '17 Sep 2026', '18 Sep 2026', '19 Sep 2026'];
 
 function doPost(event) {
   try {
@@ -31,6 +34,8 @@ function doPost(event) {
         sheet,
         payload.eventDateLabel || payload.eventDate || '',
       );
+
+      refreshTicketDashboard(workbook, sheet);
 
       return jsonResponse({ ok: true, capacity: capacity }, 200);
     }
@@ -75,6 +80,8 @@ function doPost(event) {
       } else {
         appendByHeader(sheet, valuesByHeader);
       }
+
+      refreshTicketDashboard(workbook, sheet);
     } else if (body.type === 'media') {
       appendByHeader(workbook.getSheetByName(MEDIA_SHEET_NAME), {
         'Full Name': payload.fullName || '',
@@ -164,23 +171,45 @@ function isCompletedStatus(status) {
 }
 
 function getTicketCapacityForDate(sheet, eventDate) {
+  const summary = getTicketSalesSummary(sheet);
   const targetDate = normalizeSheetText(eventDate);
-  const result = {
-    eventDate: eventDate,
-    sold: 0,
-  };
+  const dateSummary = summary[targetDate] || createTicketDateSummary(eventDate);
 
-  if (!targetDate || sheet.getLastRow() < 2) {
-    return result;
+  return {
+    capacity: DAILY_TICKET_CAPACITY,
+    eventDate: eventDate,
+    remaining: Math.max(0, DAILY_TICKET_CAPACITY - dateSummary.completedTickets),
+    sold: dateSummary.completedTickets,
+  };
+}
+
+function getTicketSalesSummary(sheet) {
+  const summary = {};
+
+  EVENT_DATES.forEach(function (eventDate) {
+    summary[normalizeSheetText(eventDate)] = createTicketDateSummary(eventDate);
+  });
+
+  if (sheet.getLastRow() < 2) {
+    return summary;
   }
 
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const eventDateColumn = headers.indexOf('Event Date');
-  const quantityColumn = headers.indexOf('Quantity');
-  const statusColumn = headers.indexOf('Status');
+  const columnIndexes = {
+    amount: headers.indexOf('Total Amount NPR'),
+    eventDate: headers.indexOf('Event Date'),
+    pidx: headers.indexOf('Khalti PIDX'),
+    quantity: headers.indexOf('Quantity'),
+    status: headers.indexOf('Status'),
+    vat: headers.indexOf('VAT NPR'),
+  };
 
-  if (eventDateColumn === -1 || quantityColumn === -1 || statusColumn === -1) {
-    return result;
+  if (
+    columnIndexes.eventDate === -1 ||
+    columnIndexes.quantity === -1 ||
+    columnIndexes.status === -1
+  ) {
+    return summary;
   }
 
   const rows = sheet
@@ -188,16 +217,115 @@ function getTicketCapacityForDate(sheet, eventDate) {
     .getValues();
 
   rows.forEach(function (row) {
-    const rowEventDate = normalizeSheetText(row[eventDateColumn]);
-    const rowStatus = row[statusColumn];
+    const rowEventDate = String(row[columnIndexes.eventDate] || '').trim();
+    const summaryKey = normalizeSheetText(rowEventDate);
+    const dateSummary =
+      summary[summaryKey] || createTicketDateSummary(rowEventDate || 'Unknown');
+    const quantity = Math.max(0, Number(row[columnIndexes.quantity]) || 0);
+    const status = row[columnIndexes.status];
 
-    if (rowEventDate === targetDate && isCompletedStatus(rowStatus)) {
-      const quantity = Number(row[quantityColumn]) || 0;
-      result.sold += Math.max(0, quantity);
+    if (isCompletedStatus(status)) {
+      dateSummary.completedTickets += quantity;
+      dateSummary.completedOrders += 1;
+      dateSummary.grossNpr += Number(row[columnIndexes.amount]) || 0;
+      dateSummary.vatNpr += Number(row[columnIndexes.vat]) || 0;
+    } else if (row[columnIndexes.pidx] || quantity) {
+      dateSummary.pendingTickets += quantity;
+      dateSummary.pendingOrders += 1;
     }
+
+    summary[summaryKey] = dateSummary;
   });
 
-  return result;
+  return summary;
+}
+
+function createTicketDateSummary(eventDate) {
+  return {
+    completedOrders: 0,
+    completedTickets: 0,
+    eventDate: eventDate,
+    grossNpr: 0,
+    pendingOrders: 0,
+    pendingTickets: 0,
+    vatNpr: 0,
+  };
+}
+
+function refreshTicketDashboard(workbook, ticketSheet) {
+  let dashboardSheet = workbook.getSheetByName(DASHBOARD_SHEET_NAME);
+
+  if (!dashboardSheet) {
+    dashboardSheet = workbook.insertSheet(DASHBOARD_SHEET_NAME);
+  }
+
+  const summary = getTicketSalesSummary(ticketSheet);
+  const rows = [
+    ['PMGO SA Fall 2026 Ticket Live Dashboard', '', '', '', '', '', '', ''],
+    ['Last Updated', new Date(), '', '', '', '', '', ''],
+    [
+      'Capacity Rule',
+      DAILY_TICKET_CAPACITY +
+        ' completed paid tickets per day. Pending/processing rows are not counted against the limit.',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ],
+    ['', '', '', '', '', '', '', ''],
+    [
+      'Event Date',
+      'Completed Paid Tickets',
+      'Remaining',
+      'Pending/Processing Tickets',
+      'Completed Orders',
+      'Pending/Processing Orders',
+      'Gross NPR',
+      'VAT NPR',
+    ],
+  ];
+
+  EVENT_DATES.forEach(function (eventDate) {
+    const dateSummary = summary[normalizeSheetText(eventDate)];
+
+    rows.push([
+      eventDate,
+      dateSummary.completedTickets,
+      Math.max(0, DAILY_TICKET_CAPACITY - dateSummary.completedTickets),
+      dateSummary.pendingTickets,
+      dateSummary.completedOrders,
+      dateSummary.pendingOrders,
+      dateSummary.grossNpr,
+      dateSummary.vatNpr,
+    ]);
+  });
+
+  dashboardSheet.clear();
+  dashboardSheet.getRange('A1:H1').breakApart();
+  dashboardSheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+  dashboardSheet.setFrozenRows(5);
+  dashboardSheet.getRange('A1:H1').merge();
+  dashboardSheet
+    .getRange('A1:H1')
+    .setBackground('#0b1d74')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(14)
+    .setHorizontalAlignment('center');
+  dashboardSheet.getRange('A2:B3').setFontWeight('bold');
+  dashboardSheet.getRange('B2').setNumberFormat('dd mmm yyyy hh:mm:ss');
+  dashboardSheet
+    .getRange('A5:H5')
+    .setBackground('#d9e8ff')
+    .setFontWeight('bold')
+    .setWrap(true);
+  dashboardSheet.getRange(6, 2, EVENT_DATES.length, 7).setNumberFormat('#,##0');
+  dashboardSheet.getRange(6, 3, EVENT_DATES.length, 1).setBackground('#e9f8ee');
+  dashboardSheet.getRange(6, 4, EVENT_DATES.length, 1).setBackground('#fff4d8');
+  dashboardSheet.getRange(1, 1, rows.length, rows[0].length).setVerticalAlignment('middle');
+  dashboardSheet.autoResizeColumns(1, rows[0].length);
 }
 
 function normalizeSheetText(value) {

@@ -135,7 +135,9 @@ export async function POST(request: Request) {
   }
 
   if (capacityStatus) {
-    const remaining = DAILY_TICKET_CAPACITY - capacityStatus.sold;
+    const remaining =
+      capacityStatus.remaining ??
+      DAILY_TICKET_CAPACITY - capacityStatus.sold;
 
     if (remaining <= 0) {
       return Response.json(

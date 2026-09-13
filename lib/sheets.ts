@@ -70,6 +70,8 @@ export async function getTicketDateCapacity(eventDate: string) {
 
   const result = (await response.json().catch(() => null)) as {
     capacity?: {
+      capacity?: number;
+      remaining?: number;
       sold?: number;
     };
     error?: string;
@@ -81,6 +83,11 @@ export async function getTicketDateCapacity(eventDate: string) {
   }
 
   return {
+    capacity: Number(result.capacity?.capacity) || null,
+    remaining:
+      typeof result.capacity?.remaining === 'number'
+        ? result.capacity.remaining
+        : null,
     sold: Number(result.capacity?.sold) || 0,
   };
 }

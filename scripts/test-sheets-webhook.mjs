@@ -39,6 +39,7 @@ if (!webhookUrl || !secret) {
 
 const isTicket = process.argv.includes('--ticket');
 const isTicketUpdate = process.argv.includes('--ticket-update');
+const isCapacity = process.argv.includes('--capacity');
 const testPidx = `test-pidx-${Date.now()}`;
 const testEmail = process.env.TEST_TICKET_EMAIL ?? 'vpstest@gmail.com';
 
@@ -81,7 +82,11 @@ const ticketPayload = {
   vatAmountNpr: 52,
 };
 
-if (isTicketUpdate) {
+if (isCapacity) {
+  await sendRecord('ticket-capacity', {
+    eventDate: '16 Sep 2026',
+  });
+} else if (isTicketUpdate) {
   await sendRecord('ticket', ticketPayload);
   await sendRecord('ticket', {
     event: 'Payment Lookup',
