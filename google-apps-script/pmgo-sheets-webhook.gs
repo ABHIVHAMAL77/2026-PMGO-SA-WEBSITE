@@ -170,8 +170,10 @@ function sendTicketEmailForRow(sheet, rowNumber) {
       ' - Your PMGO South Asia Fall 2026 Ticket';
     const htmlBody = buildTicketEmailHtml(rowData);
     const textBody = buildTicketEmailText(rowData);
+    const attachments = buildTicketAttachments(rowData);
 
     MailApp.sendEmail({
+      attachments: attachments,
       htmlBody: htmlBody,
       name: 'PMGO South Asia Finals',
       replyTo: 'abhi@esportscounty.com',
@@ -237,6 +239,7 @@ function buildTicketEmailHtml(data) {
     escapeHtml(data['Buyer Name'] || 'there') +
     ',</p>' +
     '<p style="margin:0 0 20px;font-size:15px;line-height:1.6">Your access to the 2026 PMGO South Asia Finals is confirmed. Bring your real ID card for gate verification if required.</p>' +
+    '<p style="margin:0 0 20px;font-size:15px;line-height:1.6"><strong>Your printable ticket PDF is attached to this email.</strong></p>' +
     '<div style="border:1px solid #dbe3f0;border-radius:10px;overflow:hidden">' +
     ticketDetailRow('Ticket', data['Ticket Name']) +
     ticketDetailRow('Date', data['Event Date']) +
@@ -273,6 +276,7 @@ function ticketDetailRow(label, value) {
 function buildTicketEmailText(data) {
   return [
     'Your PMGO South Asia Fall 2026 ticket is confirmed.',
+    'Your printable ticket PDF is attached to this email.',
     '',
     'Ticket: ' + (data['Ticket Name'] || ''),
     'Date: ' + (data['Event Date'] || ''),
@@ -289,6 +293,144 @@ function buildTicketEmailText(data) {
   ].join('\n');
 }
 
+function buildTicketAttachments(data) {
+  const html = buildTicketPdfHtml(data);
+  const fileName =
+    'PMGO-SA-Fall-2026-Ticket-' +
+    safeFileName(data['Khalti PIDX'] || data['Order ID'] || 'confirmed') +
+    '.pdf';
+
+  return [
+    HtmlService.createHtmlOutput(html)
+      .getBlob()
+      .getAs(MimeType.PDF)
+      .setName(fileName),
+  ];
+}
+
+function buildTicketPdfHtml(data) {
+  const attendees = parseAttendees(data);
+  const ticketPages = attendees
+    .map(function (attendee, index) {
+      const ticketCode = [
+        'PMGO-SA-2026',
+        data['Event Date'] || '',
+        data['Khalti PIDX'] || '',
+        index + 1,
+        attendee.name || '',
+      ].join('|');
+      const qrDataUri = createQrDataUri(ticketCode);
+
+      return (
+        '<section class="ticket">' +
+        '<div class="ticket-header">' +
+        '<div class="eyebrow">PUBG MOBILE ESPORTS SOUTH ASIA</div>' +
+        '<h1>YOUR TICKET IS CONFIRMED</h1>' +
+        '<div class="date">' +
+        escapeHtml(data['Event Date'] || '') +
+        '</div>' +
+        '</div>' +
+        '<div class="ticket-body">' +
+        '<div class="identity">' +
+        '<div class="label">Attendee</div>' +
+        '<div class="name">' +
+        escapeHtml(attendee.name || data['Buyer Name'] || 'Guest') +
+        '</div>' +
+        '<div class="meta-grid">' +
+        pdfMeta('Ticket', data['Ticket Name']) +
+        pdfMeta('Quantity', data.Quantity) +
+        pdfMeta('Amount', 'NPR ' + (data['Total Amount NPR'] || '')) +
+        pdfMeta('Transaction', data['Transaction ID']) +
+        pdfMeta('Khalti PIDX', data['Khalti PIDX']) +
+        pdfMeta('Contact', attendee.email || data['Buyer Email']) +
+        '</div>' +
+        '</div>' +
+        '<div class="qr-box">' +
+        (qrDataUri
+          ? '<img src="' + qrDataUri + '" alt="Ticket QR code">'
+          : '<div class="qr-fallback">' + escapeHtml(ticketCode) + '</div>') +
+        '<div class="qr-label">SCAN AT GATE</div>' +
+        '</div>' +
+        '</div>' +
+        '<div class="ticket-footer">Bring real ID card for gate verification if required. All ticket purchases are final and non-refundable.</div>' +
+        '</section>'
+      );
+    })
+    .join('');
+
+  return (
+    '<!doctype html><html><head><meta charset="UTF-8"><style>' +
+    '@page{size:A4;margin:18mm}body{margin:0;background:#eef3fb;font-family:Arial,Helvetica,sans-serif;color:#101827}.ticket{page-break-after:always;overflow:hidden;border-radius:18px;background:#fff;border:1px solid #d8e1f0;box-shadow:0 18px 44px rgba(15,23,42,.12)}.ticket:last-child{page-break-after:auto}.ticket-header{background:#0b1d74;color:#fff;text-align:center;padding:28px 22px}.eyebrow{font-size:10px;font-weight:800;letter-spacing:.18em}.ticket-header h1{margin:8px 0 0;font-size:26px;line-height:1.1}.date{margin-top:8px;font-size:14px;font-weight:800}.ticket-body{display:flex;gap:22px;padding:28px}.identity{flex:1}.label{font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#607086}.name{margin-top:8px;border-radius:10px;background:#102784;color:#fff;padding:12px 14px;font-size:24px;font-weight:900;text-align:center;text-transform:uppercase}.meta-grid{margin-top:18px;border:1px solid #dce5f2;border-radius:12px;overflow:hidden}.meta{display:flex;border-bottom:1px solid #edf1f7}.meta:last-child{border-bottom:0}.meta-label{width:34%;background:#f7f9fd;padding:11px 12px;font-size:10px;font-weight:800;text-transform:uppercase;color:#607086}.meta-value{flex:1;padding:11px 12px;font-size:12px;font-weight:800;word-break:break-word}.qr-box{width:180px;text-align:center;border:1px solid #dce5f2;border-radius:14px;padding:12px;align-self:flex-start}.qr-box img{width:156px;height:156px;display:block;margin:0 auto}.qr-label{margin-top:8px;font-size:10px;font-weight:900;letter-spacing:.14em;color:#0b1d74}.qr-fallback{font-size:10px;line-height:1.4;word-break:break-all;padding:20px 4px}.ticket-footer{background:#0b1d74;color:#fff;text-align:center;padding:14px 20px;font-size:10px;font-weight:800;letter-spacing:.04em}' +
+    '</style></head><body>' +
+    ticketPages +
+    '</body></html>'
+  );
+}
+
+function pdfMeta(label, value) {
+  return (
+    '<div class="meta"><div class="meta-label">' +
+    escapeHtml(label) +
+    '</div><div class="meta-value">' +
+    escapeHtml(value || '') +
+    '</div></div>'
+  );
+}
+
+function parseAttendees(data) {
+  const attendeeDetails = String(data['Attendee Details'] || '').trim();
+
+  if (!attendeeDetails) {
+    return [
+      {
+        email: data['Buyer Email'] || '',
+        name: data['Buyer Name'] || '',
+        phone: data['Buyer Phone'] || '',
+      },
+    ];
+  }
+
+  return attendeeDetails.split('\n').map(function (line) {
+    const cleaned = line.replace(/^\s*\d+\.\s*/, '');
+    const parts = cleaned.split('|').map(function (part) {
+      return part.trim();
+    });
+
+    return {
+      email: parts[1] || data['Buyer Email'] || '',
+      name: parts[0] || data['Buyer Name'] || '',
+      phone: parts[2] || data['Buyer Phone'] || '',
+    };
+  });
+}
+
+function createQrDataUri(value) {
+  try {
+    const url =
+      'https://quickchart.io/qr?size=220&margin=1&text=' +
+      encodeURIComponent(value);
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+
+    if (response.getResponseCode() >= 400) {
+      return '';
+    }
+
+    return (
+      'data:image/png;base64,' +
+      Utilities.base64Encode(response.getBlob().getBytes())
+    );
+  } catch (error) {
+    return '';
+  }
+}
+
+function safeFileName(value) {
+  return String(value || '')
+    .replace(/[^a-z0-9-]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
 function escapeHtml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -300,4 +442,13 @@ function escapeHtml(value) {
 
 function authorizeMailApp() {
   Logger.log(MailApp.getRemainingDailyQuota());
+}
+
+function authorizeTicketServices() {
+  Logger.log(MailApp.getRemainingDailyQuota());
+  Logger.log(
+    UrlFetchApp.fetch('https://quickchart.io/qr?text=test&size=80', {
+      muteHttpExceptions: true,
+    }).getResponseCode(),
+  );
 }
