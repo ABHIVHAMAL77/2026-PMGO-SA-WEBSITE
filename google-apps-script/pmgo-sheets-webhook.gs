@@ -347,7 +347,18 @@ function refreshTicketDashboard(workbook, ticketSheet) {
 }
 
 function normalizeSheetText(value) {
-  return String(value || '').trim().toLowerCase();
+  return formatDisplayDate(value).trim().toLowerCase();
+}
+
+function formatDisplayDate(value) {
+  if (
+    Object.prototype.toString.call(value) === '[object Date]' &&
+    !isNaN(value.getTime())
+  ) {
+    return Utilities.formatDate(value, 'Etc/UTC', 'dd MMM yyyy');
+  }
+
+  return String(value || '').trim();
 }
 
 function sendTicketEmailForRow(sheet, rowNumber) {
@@ -364,12 +375,14 @@ function sendTicketEmailForRow(sheet, rowNumber) {
   }
 
   try {
+    const eventDate = formatDisplayDate(rowData['Event Date']);
     const subject =
-      rowData['Event Date'] +
+      eventDate +
       ' - Your PMGO South Asia Fall 2026 Ticket';
     const ticketAssets = buildTicketEmailAssets(rowData);
+    const ticketCardsHtml = buildEmailTicketCardsHtml(rowData, ticketAssets.inlineImages);
     const inlineImageKeys = Object.keys(ticketAssets.inlineImages);
-    const htmlBody = buildTicketEmailHtml(rowData, inlineImageKeys);
+    const htmlBody = buildTicketEmailHtml(rowData, ticketCardsHtml);
     const textBody = buildTicketEmailText(rowData);
     const attachments = ticketAssets.attachments;
     const attachmentNames = attachments.map(function (attachment) {
@@ -426,7 +439,8 @@ function setByHeader(sheet, rowNumber, header, value) {
   }
 }
 
-function buildTicketEmailHtml(data, inlineImageKeys) {
+function buildTicketEmailHtml(data, ticketCardsHtml) {
+  const eventDate = formatDisplayDate(data['Event Date']);
   const attendeeHtml = escapeHtml(data['Attendee Details'] || '')
     .split('\n')
     .filter(Boolean)
@@ -442,7 +456,7 @@ function buildTicketEmailHtml(data, inlineImageKeys) {
     '<div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase">PUBG Mobile Esports South Asia</div>' +
     '<h1 style="margin:8px 0 0;font-size:24px;line-height:1.15;text-transform:uppercase">Your ticket is confirmed</h1>' +
     '<div style="margin-top:6px;font-size:13px;font-weight:700">' +
-    escapeHtml(data['Event Date'] || '') +
+    escapeHtml(eventDate) +
     '</div>' +
     '</div>' +
     '<div style="padding:24px">' +
@@ -450,11 +464,11 @@ function buildTicketEmailHtml(data, inlineImageKeys) {
     escapeHtml(data['Buyer Name'] || 'there') +
     ',</p>' +
     '<p style="margin:0 0 20px;font-size:15px;line-height:1.6">Your access to the 2026 PMGO South Asia Finals is confirmed. Bring your real ID card for gate verification if required.</p>' +
-    buildInlineTicketPreviewHtml(inlineImageKeys) +
+    ticketCardsHtml +
     '<p style="margin:0 0 20px;font-size:15px;line-height:1.6"><strong>Your printable ticket PDF is attached to this email.</strong></p>' +
     '<div style="border:1px solid #dbe3f0;border-radius:10px;overflow:hidden">' +
     ticketDetailRow('Ticket', data['Ticket Name']) +
-    ticketDetailRow('Date', data['Event Date']) +
+    ticketDetailRow('Date', eventDate) +
     ticketDetailRow('Quantity', data.Quantity) +
     ticketDetailRow('Amount paid', 'NPR ' + data['Total Amount NPR']) +
     ticketDetailRow('Transaction ID', data['Transaction ID']) +
@@ -472,25 +486,84 @@ function buildTicketEmailHtml(data, inlineImageKeys) {
   );
 }
 
-function buildInlineTicketPreviewHtml(inlineImageKeys) {
-  const imageHtml = (inlineImageKeys || [])
-    .map(function (key) {
+function buildEmailTicketCardsHtml(data, inlineImages) {
+  const eventDate = formatDisplayDate(data['Event Date']);
+  const attendees = parseAttendees(data);
+  const cardsHtml = attendees
+    .map(function (attendee, index) {
+      const ticketId = buildTicketId(data, index);
+      const qrKey = 'ticketQr' + (index + 1);
+      const qrValue = buildTicketQrValue(data, attendee, index, ticketId);
+      let qrHtml =
+        '<div style="font-size:9px;line-height:1.4;word-break:break-all;color:#ffffff">' +
+        escapeHtml(ticketId) +
+        '</div>';
+
+      try {
+        inlineImages[qrKey] = createQrBlob(qrValue).setName(
+          'PMGO-SA-Fall-2026-QR-' + safeFileName(ticketId) + '.png',
+        );
+        qrHtml =
+          '<img src="cid:' +
+          qrKey +
+          '" alt="Ticket QR code" style="display:block;width:116px;height:116px;margin:0 auto;border:0">';
+      } catch (error) {
+        Logger.log('Email QR image skipped: ' + error);
+      }
+
       return (
-        '<img src="cid:' +
-        escapeHtml(key) +
-        '" alt="PMGO ticket" style="display:block;width:100%;max-width:560px;height:auto;margin:0 auto 14px;border:0">'
+        '<table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;max-width:560px;margin:0 auto 16px;border-collapse:collapse;border:1px solid #cfd9ec;background:#eef5ff">' +
+        '<tr>' +
+        '<td colspan="2" style="padding:12px 16px;background:#f7fbff;text-align:center;font-size:18px;font-weight:900;letter-spacing:.02em;color:#111827;text-transform:uppercase">2026 PMGO South Asia Fall</td>' +
+        '</tr>' +
+        '<tr>' +
+        '<td style="padding:18px 18px 14px;background:#eaf2ff;vertical-align:middle">' +
+        '<div style="margin:0 0 12px;font-size:10px;font-weight:900;letter-spacing:.16em;color:#56708e;text-transform:uppercase">General Entry</div>' +
+        '<div style="border-radius:8px;background:#082fc7;color:#ffffff;text-align:center;padding:12px 10px;font-size:22px;line-height:1;font-weight:900;text-transform:uppercase">' +
+        escapeHtml(attendee.name || data['Buyer Name'] || 'Guest') +
+        '</div>' +
+        '<table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;margin-top:14px;border-collapse:collapse;font-size:11px;color:#27364a">' +
+        emailTicketMetaRow('Access', data['Ticket Name'] || 'General Pass') +
+        emailTicketMetaRow('Date', eventDate) +
+        emailTicketMetaRow('Ticket ID', ticketId) +
+        '</table>' +
+        '</td>' +
+        '<td style="width:148px;padding:14px;background:#092fcb;text-align:center;vertical-align:middle;color:#ffffff">' +
+        '<div style="font-size:13px;font-weight:900;text-transform:uppercase;margin-bottom:8px">Ticket</div>' +
+        '<div style="display:inline-block;background:#ffffff;padding:8px">' +
+        qrHtml +
+        '</div>' +
+        '<div style="margin-top:9px;font-size:12px;font-weight:900;text-transform:uppercase">' +
+        escapeHtml(eventDate) +
+        '</div>' +
+        '</td>' +
+        '</tr>' +
+        '</table>'
       );
     })
     .join('');
 
-  if (!imageHtml) {
+  if (!cardsHtml) {
     return '';
   }
 
   return (
-    '<div style="margin:0 0 20px;text-align:center">' +
-    imageHtml +
+    '<div style="margin:0 0 22px;text-align:center">' +
+    cardsHtml +
     '</div>'
+  );
+}
+
+function emailTicketMetaRow(label, value) {
+  return (
+    '<tr>' +
+    '<td style="width:32%;padding:5px 0;font-size:10px;font-weight:900;letter-spacing:.08em;color:#5f7188;text-transform:uppercase">' +
+    escapeHtml(label) +
+    '</td>' +
+    '<td style="padding:5px 0;font-size:11px;font-weight:800;color:#111827">' +
+    escapeHtml(value || '') +
+    '</td>' +
+    '</tr>'
   );
 }
 
@@ -508,12 +581,14 @@ function ticketDetailRow(label, value) {
 }
 
 function buildTicketEmailText(data) {
+  const eventDate = formatDisplayDate(data['Event Date']);
+
   return [
     'Your PMGO South Asia Fall 2026 ticket is confirmed.',
     'Your printable ticket PDF is attached to this email.',
     '',
     'Ticket: ' + (data['Ticket Name'] || ''),
-    'Date: ' + (data['Event Date'] || ''),
+    'Date: ' + eventDate,
     'Quantity: ' + (data.Quantity || ''),
     'Amount paid: NPR ' + (data['Total Amount NPR'] || ''),
     'Transaction ID: ' + (data['Transaction ID'] || ''),
@@ -560,11 +635,9 @@ function buildTicketTemplateAssets(data) {
 
     try {
       const presentation = SlidesApp.openById(copyId);
-      const firstSlide = presentation.getSlides()[0];
-      const firstSlideObjectId = firstSlide.getObjectId();
 
       presentation.replaceAllText('{{NAME}}', attendee.name || data['Buyer Name'] || 'Guest');
-      presentation.replaceAllText('{{DATE}}', data['Event Date'] || '');
+      presentation.replaceAllText('{{DATE}}', formatDisplayDate(data['Event Date']));
       presentation.replaceAllText('{{TICKET_ID}}', ticketId);
       presentation.replaceAllText('{{TICKET ID }}', ticketId);
       presentation.replaceAllText('{{TICKET ID}}', ticketId);
@@ -576,16 +649,6 @@ function buildTicketTemplateAssets(data) {
           .getAs(MimeType.PDF)
           .setName('PMGO-SA-Fall-2026-Ticket-' + safeFileName(ticketId) + '.pdf'),
       );
-
-      try {
-        inlineImages['ticketPreview' + (index + 1)] = exportSlidePng(
-          copyId,
-          firstSlideObjectId,
-          'PMGO-SA-Fall-2026-Ticket-' + safeFileName(ticketId) + '.png',
-        );
-      } catch (error) {
-        Logger.log('Ticket preview image skipped: ' + error);
-      }
     } finally {
       DriveApp.getFileById(copyId).setTrashed(true);
     }
@@ -595,28 +658,6 @@ function buildTicketTemplateAssets(data) {
     attachments: attachments,
     inlineImages: inlineImages,
   };
-}
-
-function exportSlidePng(presentationId, slideObjectId, fileName) {
-  const url =
-    'https://docs.google.com/presentation/d/' +
-    presentationId +
-    '/export/png?id=' +
-    presentationId +
-    '&pageid=' +
-    slideObjectId;
-  const response = UrlFetchApp.fetch(url, {
-    headers: {
-      Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
-    },
-    muteHttpExceptions: true,
-  });
-
-  if (response.getResponseCode() >= 400) {
-    throw new Error('Ticket preview image could not be exported.');
-  }
-
-  return response.getBlob().setName(fileName);
 }
 
 function replaceQrPlaceholder(presentation, qrValue) {
@@ -675,6 +716,7 @@ function buildFallbackTicketPdf(data) {
 
 function buildTicketPdfHtml(data) {
   const attendees = parseAttendees(data);
+  const eventDate = formatDisplayDate(data['Event Date']);
   const ticketPages = attendees
     .map(function (attendee, index) {
       const ticketId = buildTicketId(data, index);
@@ -687,7 +729,7 @@ function buildTicketPdfHtml(data) {
         '<div class="eyebrow">PUBG MOBILE ESPORTS SOUTH ASIA</div>' +
         '<h1>YOUR TICKET IS CONFIRMED</h1>' +
         '<div class="date">' +
-        escapeHtml(data['Event Date'] || '') +
+        escapeHtml(eventDate) +
         '</div>' +
         '</div>' +
         '<div class="ticket-body">' +
@@ -729,7 +771,7 @@ function buildTicketPdfHtml(data) {
 }
 
 function buildTicketId(data, index) {
-  const date = String(data['Event Date'] || '')
+  const date = formatDisplayDate(data['Event Date'])
     .replace(/\s+/g, '')
     .toUpperCase();
   const reference = String(data['Khalti PIDX'] || data['Order ID'] || 'TICKET')
@@ -744,7 +786,7 @@ function buildTicketQrValue(data, attendee, index, ticketId) {
   return [
     'PMGO-SA-FALL-2026',
     'TICKET_ID=' + ticketId,
-    'DATE=' + (data['Event Date'] || ''),
+    'DATE=' + formatDisplayDate(data['Event Date']),
     'NAME=' + (attendee.name || data['Buyer Name'] || ''),
     'PIDX=' + (data['Khalti PIDX'] || ''),
     'TXN=' + (data['Transaction ID'] || ''),
@@ -831,7 +873,6 @@ function authorizeMailApp() {
 
 function authorizeTicketServices() {
   Logger.log(MailApp.getRemainingDailyQuota());
-  ScriptApp.getOAuthToken();
   Logger.log(DriveApp.getFileById(TICKET_TEMPLATE_PRESENTATION_ID).getName());
   Logger.log(SlidesApp.openById(TICKET_TEMPLATE_PRESENTATION_ID).getName());
   Logger.log(
