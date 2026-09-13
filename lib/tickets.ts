@@ -1,6 +1,6 @@
 export type TicketPlanId = 'general-day-pass';
 
-export const DAILY_TICKET_CAPACITY = 620;
+export const DAILY_TICKET_CAPACITY = 500;
 export const EVENT_DOORS_OPEN = 'Doors open 3:00 PM onwards';
 
 export type TicketPlan = {

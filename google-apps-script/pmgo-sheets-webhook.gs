@@ -1,7 +1,7 @@
 const TICKET_SHEET_NAME = 'Tickets';
 const MEDIA_SHEET_NAME = 'Media Applications';
 const DASHBOARD_SHEET_NAME = 'Ticket Dashboard';
-const DAILY_TICKET_CAPACITY = 620;
+const DAILY_TICKET_CAPACITY = 500;
 const EVENT_DOORS_OPEN = 'Doors open 3:00 PM onwards';
 const TICKET_TEMPLATE_PRESENTATION_ID =
   '1GZIQXDTXRRQh5qnf87DgSD0LFN83GDrNlc7dzq23EeI';
