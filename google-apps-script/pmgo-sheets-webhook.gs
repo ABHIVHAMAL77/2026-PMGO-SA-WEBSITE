@@ -112,6 +112,24 @@ function jsonResponse(payload, statusCode) {
   );
 }
 
+function setupTicketDashboard() {
+  const spreadsheetId =
+    PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+
+  if (!spreadsheetId) {
+    throw new Error('Missing SPREADSHEET_ID script property.');
+  }
+
+  const workbook = SpreadsheetApp.openById(spreadsheetId);
+  const ticketSheet = workbook.getSheetByName(TICKET_SHEET_NAME);
+
+  if (!ticketSheet) {
+    throw new Error('Tickets sheet not found.');
+  }
+
+  refreshTicketDashboard(workbook, ticketSheet);
+}
+
 function appendByHeader(sheet, valuesByHeader) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const row = headers.map(function (header) {
