@@ -2,6 +2,7 @@ const TICKET_SHEET_NAME = 'Tickets';
 const MEDIA_SHEET_NAME = 'Media Applications';
 const DASHBOARD_SHEET_NAME = 'Ticket Dashboard';
 const DAILY_TICKET_CAPACITY = 620;
+const EVENT_DOORS_OPEN = 'Doors open 3:00 PM onwards';
 const TICKET_TEMPLATE_PRESENTATION_ID =
   '1GZIQXDTXRRQh5qnf87DgSD0LFN83GDrNlc7dzq23EeI';
 const EVENT_DATES = ['16 Sep 2026', '17 Sep 2026', '18 Sep 2026', '19 Sep 2026'];
@@ -42,7 +43,11 @@ function doPost(event) {
 
     if (body.type === 'ticket') {
       const sheet = workbook.getSheetByName(TICKET_SHEET_NAME);
-      ensureHeaders(sheet, ['Ticket Email Sent At', 'Ticket Email Error']);
+      ensureHeaders(sheet, [
+        'Doors Open',
+        'Ticket Email Sent At',
+        'Ticket Email Error',
+      ]);
 
       const eventDate = payload.eventDateLabel || payload.eventDate || '';
       const valuesByHeader = {
@@ -51,6 +56,7 @@ function doPost(event) {
         'Buyer Email': payload.buyerEmail || '',
         'Buyer Name': payload.buyerName || '',
         'Buyer Phone': payload.buyerPhone || '',
+        'Doors Open': payload.eventDoorsOpen || EVENT_DOORS_OPEN,
         Event: payload.event || '',
         'Event Date': eventDate,
         'Khalti Mobile': payload.khaltiMobile || '',
@@ -292,6 +298,7 @@ function refreshTicketDashboard(workbook, ticketSheet) {
       '',
       '',
     ],
+    ['Doors Open', EVENT_DOORS_OPEN, '', '', '', '', '', ''],
     ['', '', '', '', '', '', '', ''],
     [
       'Event Date',
@@ -323,7 +330,7 @@ function refreshTicketDashboard(workbook, ticketSheet) {
   dashboardSheet.clear();
   dashboardSheet.getRange('A1:H1').breakApart();
   dashboardSheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
-  dashboardSheet.setFrozenRows(5);
+  dashboardSheet.setFrozenRows(6);
   dashboardSheet.getRange('A1:H1').merge();
   dashboardSheet
     .getRange('A1:H1')
@@ -332,16 +339,16 @@ function refreshTicketDashboard(workbook, ticketSheet) {
     .setFontWeight('bold')
     .setFontSize(14)
     .setHorizontalAlignment('center');
-  dashboardSheet.getRange('A2:B3').setFontWeight('bold');
+  dashboardSheet.getRange('A2:B4').setFontWeight('bold');
   dashboardSheet.getRange('B2').setNumberFormat('dd mmm yyyy hh:mm:ss');
   dashboardSheet
-    .getRange('A5:H5')
+    .getRange('A6:H6')
     .setBackground('#d9e8ff')
     .setFontWeight('bold')
     .setWrap(true);
-  dashboardSheet.getRange(6, 2, EVENT_DATES.length, 7).setNumberFormat('#,##0');
-  dashboardSheet.getRange(6, 3, EVENT_DATES.length, 1).setBackground('#e9f8ee');
-  dashboardSheet.getRange(6, 4, EVENT_DATES.length, 1).setBackground('#fff4d8');
+  dashboardSheet.getRange(7, 2, EVENT_DATES.length, 7).setNumberFormat('#,##0');
+  dashboardSheet.getRange(7, 3, EVENT_DATES.length, 1).setBackground('#e9f8ee');
+  dashboardSheet.getRange(7, 4, EVENT_DATES.length, 1).setBackground('#fff4d8');
   dashboardSheet.getRange(1, 1, rows.length, rows[0].length).setVerticalAlignment('middle');
   dashboardSheet.autoResizeColumns(1, rows[0].length);
 }
@@ -359,6 +366,10 @@ function formatDisplayDate(value) {
   }
 
   return String(value || '').trim();
+}
+
+function getDoorsOpenText(data) {
+  return String(data['Doors Open'] || EVENT_DOORS_OPEN).trim();
 }
 
 function sendTicketEmailForRow(sheet, rowNumber) {
@@ -441,6 +452,7 @@ function setByHeader(sheet, rowNumber, header, value) {
 
 function buildTicketEmailHtml(data, ticketCardsHtml) {
   const eventDate = formatDisplayDate(data['Event Date']);
+  const doorsOpen = getDoorsOpenText(data);
   const attendeeHtml = escapeHtml(data['Attendee Details'] || '')
     .split('\n')
     .filter(Boolean)
@@ -463,12 +475,15 @@ function buildTicketEmailHtml(data, ticketCardsHtml) {
     '<p style="margin:0 0 14px;font-size:15px">Hi ' +
     escapeHtml(data['Buyer Name'] || 'there') +
     ',</p>' +
-    '<p style="margin:0 0 20px;font-size:15px;line-height:1.6">Your access to the 2026 PMGO South Asia Finals is confirmed. Bring your real ID card for gate verification if required.</p>' +
+    '<p style="margin:0 0 20px;font-size:15px;line-height:1.6">Your access to the 2026 PMGO South Asia Finals is confirmed. ' +
+    escapeHtml(doorsOpen) +
+    '. Bring your real ID card for gate verification if required.</p>' +
     ticketCardsHtml +
     '<p style="margin:0 0 20px;font-size:15px;line-height:1.6"><strong>Your printable ticket PDF is attached to this email.</strong></p>' +
     '<div style="border:1px solid #dbe3f0;border-radius:10px;overflow:hidden">' +
     ticketDetailRow('Ticket', data['Ticket Name']) +
     ticketDetailRow('Date', eventDate) +
+    ticketDetailRow('Doors open', doorsOpen) +
     ticketDetailRow('Quantity', data.Quantity) +
     ticketDetailRow('Amount paid', 'NPR ' + data['Total Amount NPR']) +
     ticketDetailRow('Transaction ID', data['Transaction ID']) +
@@ -488,6 +503,7 @@ function buildTicketEmailHtml(data, ticketCardsHtml) {
 
 function buildEmailTicketCardsHtml(data, inlineImages) {
   const eventDate = formatDisplayDate(data['Event Date']);
+  const doorsOpen = getDoorsOpenText(data);
   const attendees = parseAttendees(data);
   const cardsHtml = attendees
     .map(function (attendee, index) {
@@ -525,6 +541,7 @@ function buildEmailTicketCardsHtml(data, inlineImages) {
         '<table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;margin-top:14px;border-collapse:collapse;font-size:11px;color:#27364a">' +
         emailTicketMetaRow('Access', data['Ticket Name'] || 'General Pass') +
         emailTicketMetaRow('Date', eventDate) +
+        emailTicketMetaRow('Doors', doorsOpen) +
         emailTicketMetaRow('Ticket ID', ticketId) +
         '</table>' +
         '</td>' +
@@ -582,6 +599,7 @@ function ticketDetailRow(label, value) {
 
 function buildTicketEmailText(data) {
   const eventDate = formatDisplayDate(data['Event Date']);
+  const doorsOpen = getDoorsOpenText(data);
 
   return [
     'Your PMGO South Asia Fall 2026 ticket is confirmed.',
@@ -589,6 +607,7 @@ function buildTicketEmailText(data) {
     '',
     'Ticket: ' + (data['Ticket Name'] || ''),
     'Date: ' + eventDate,
+    'Doors open: ' + doorsOpen,
     'Quantity: ' + (data.Quantity || ''),
     'Amount paid: NPR ' + (data['Total Amount NPR'] || ''),
     'Transaction ID: ' + (data['Transaction ID'] || ''),
@@ -597,6 +616,7 @@ function buildTicketEmailText(data) {
     'Attendees:',
     data['Attendee Details'] || '',
     '',
+    doorsOpen + '.',
     'Bring your real ID card for gate verification if required.',
     'All ticket purchases are final and non-refundable.',
   ].join('\n');
@@ -638,6 +658,8 @@ function buildTicketTemplateAssets(data) {
 
       presentation.replaceAllText('{{NAME}}', attendee.name || data['Buyer Name'] || 'Guest');
       presentation.replaceAllText('{{DATE}}', formatDisplayDate(data['Event Date']));
+      presentation.replaceAllText('{{DOORS}}', getDoorsOpenText(data));
+      presentation.replaceAllText('{{TIME}}', getDoorsOpenText(data));
       presentation.replaceAllText('{{TICKET_ID}}', ticketId);
       presentation.replaceAllText('{{TICKET ID }}', ticketId);
       presentation.replaceAllText('{{TICKET ID}}', ticketId);
@@ -717,6 +739,7 @@ function buildFallbackTicketPdf(data) {
 function buildTicketPdfHtml(data) {
   const attendees = parseAttendees(data);
   const eventDate = formatDisplayDate(data['Event Date']);
+  const doorsOpen = getDoorsOpenText(data);
   const ticketPages = attendees
     .map(function (attendee, index) {
       const ticketId = buildTicketId(data, index);
@@ -740,6 +763,7 @@ function buildTicketPdfHtml(data) {
         '</div>' +
         '<div class="meta-grid">' +
         pdfMeta('Ticket', data['Ticket Name']) +
+        pdfMeta('Doors', doorsOpen) +
         pdfMeta('Quantity', data.Quantity) +
         pdfMeta('Amount', 'NPR ' + (data['Total Amount NPR'] || '')) +
         pdfMeta('Ticket ID', ticketId) +
@@ -755,7 +779,9 @@ function buildTicketPdfHtml(data) {
         '<div class="qr-label">SCAN AT GATE</div>' +
         '</div>' +
         '</div>' +
-        '<div class="ticket-footer">Bring real ID card for gate verification if required. All ticket purchases are final and non-refundable.</div>' +
+        '<div class="ticket-footer">' +
+        escapeHtml(doorsOpen) +
+        '. Bring real ID card for gate verification if required. All ticket purchases are final and non-refundable.</div>' +
         '</section>'
       );
     })
@@ -787,6 +813,7 @@ function buildTicketQrValue(data, attendee, index, ticketId) {
     'PMGO-SA-FALL-2026',
     'TICKET_ID=' + ticketId,
     'DATE=' + formatDisplayDate(data['Event Date']),
+    'DOORS=' + getDoorsOpenText(data),
     'NAME=' + (attendee.name || data['Buyer Name'] || ''),
     'PIDX=' + (data['Khalti PIDX'] || ''),
     'TXN=' + (data['Transaction ID'] || ''),

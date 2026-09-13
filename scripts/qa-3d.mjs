@@ -177,7 +177,8 @@ async function inspectPage(page) {
         !pageText.includes('npr 500') &&
         !pageText.includes('npr 650') &&
         !pageText.includes('npr 1,800'),
-      hasDoorsTbd: pageText.includes('doors open') && pageText.includes('tbd'),
+      hasDoorsOpenTime:
+        pageText.includes('doors open') && pageText.includes('3:00 pm onwards'),
       scrollHeight: document.documentElement.scrollHeight,
     };
   });
@@ -267,8 +268,8 @@ try {
     if (!result.pageStatus.hasRemovedOldPrices) {
       issues.push(`${result.label}: old ticket pricing still present`);
     }
-    if (!result.pageStatus.hasDoorsTbd) {
-      issues.push(`${result.label}: doors open TBD missing`);
+    if (!result.pageStatus.hasDoorsOpenTime) {
+      issues.push(`${result.label}: doors open 3:00 PM onwards missing`);
     }
     if (!result.canvasStatus.exists) {
       issues.push(`${result.label}: 3D canvas missing`);

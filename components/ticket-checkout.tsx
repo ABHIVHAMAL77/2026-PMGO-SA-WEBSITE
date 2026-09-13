@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { EVENT_DOORS_OPEN } from '@/lib/tickets';
 import type { TicketPlan } from '@/lib/tickets';
 
 type BuyerDetails = {
@@ -228,6 +229,9 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
               <p className="mt-1 text-sm font-semibold text-slate-400">
                 {selectedTicket?.subline} · {selectedDateLabel}
               </p>
+              <p className="mt-1 text-sm font-semibold text-cyan-100/80">
+                {EVENT_DOORS_OPEN}
+              </p>
             </div>
             <div className="rounded-md bg-cyan-200 px-4 py-3 text-right text-[#071123]">
               <p className="text-xs font-black uppercase tracking-[0.12em]">
@@ -327,7 +331,8 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
               </p>
             </div>
             <p className="rounded-md border border-red-300/24 bg-red-500/10 px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-red-100">
-              Bring real ID card for gate verification if required
+              {EVENT_DOORS_OPEN}. Bring real ID card for gate verification if
+              required
             </p>
           </div>
 

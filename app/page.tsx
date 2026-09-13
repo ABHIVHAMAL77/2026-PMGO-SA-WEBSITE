@@ -11,7 +11,7 @@ import { FallbackImage } from '@/components/fallback-image';
 import { LazyThreeStage } from '@/components/lazy-three-stage';
 import { MediaApplicationForm } from '@/components/media-application-form';
 import { TicketCheckout } from '@/components/ticket-checkout';
-import { ticketPlans } from '@/lib/tickets';
+import { EVENT_DOORS_OPEN, ticketPlans } from '@/lib/tickets';
 
 const assets = {
   arenaWide: '/kv-bg-wide.webp',
@@ -27,7 +27,7 @@ const assets = {
 const heroFacts = [
   ['16-19 Sep 2026', 'Grand Finals'],
   ['Dashrath Rangasala Covered Hall', 'Nepal'],
-  ['TBD', 'Doors Open'],
+  ['3:00 PM onwards', 'Doors Open'],
   ['USD 40,000', 'Prize Pool'],
 ];
 
@@ -45,7 +45,7 @@ const eventDetails = [
   {
     icon: Clock3,
     label: 'Doors',
-    value: 'TBD',
+    value: '3:00 PM onwards',
   },
   {
     icon: UsersRound,
@@ -707,7 +707,7 @@ export default function Home() {
             </h2>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">
               Four straight days of PMGO South Asia Finals at Dashrath Rangasala
-              Covered Hall, Nepal. Door timing will be announced.
+              Covered Hall, Nepal. {EVENT_DOORS_OPEN}.
             </p>
           </div>
 
@@ -759,9 +759,11 @@ export default function Home() {
                 <div className="grid gap-3 px-5 py-5 sm:grid-cols-[42px_1fr]">
                   <Clock3 className="size-6 text-red-300" aria-hidden="true" />
                   <div>
-                    <p className="text-xl font-black uppercase">Doors TBD</p>
+                    <p className="text-xl font-black uppercase">
+                      Doors open 3:00 PM onwards
+                    </p>
                     <p className="mt-1 text-sm font-semibold leading-6 text-slate-400">
-                      Entry timing will be confirmed for all four finals days.
+                      Arrive early for entry checks and ticket verification.
                     </p>
                   </div>
                 </div>

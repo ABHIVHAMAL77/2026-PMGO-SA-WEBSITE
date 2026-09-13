@@ -11,7 +11,7 @@ import {
   Ticket,
 } from 'lucide-react';
 
-import { ticketPlans } from '@/lib/tickets';
+import { EVENT_DOORS_OPEN, ticketPlans } from '@/lib/tickets';
 
 export const metadata: Metadata = {
   title: 'Ticket Terms & Conditions | 2026 PMGO SA Fall',
@@ -40,7 +40,7 @@ const quickFacts = [
   {
     icon: Clock3,
     label: 'Doors',
-    value: 'TBD',
+    value: '3:00 PM onwards',
   },
 ];
 
@@ -49,6 +49,7 @@ const termSections = [
     title: 'Pass Validity',
     items: [
       'General Pass is valid for one selected event day only.',
+      EVENT_DOORS_OPEN + '.',
       'Ticket price is NPR 400 per ticket, with 13% VAT added at checkout.',
       'Each attendee must hold a valid General Pass for the day they attend.',
       'Each ticket order must include attendee name, email, and WhatsApp details for every ticket quantity.',
@@ -75,7 +76,7 @@ const termSections = [
   {
     title: 'Entry & Venue Rules',
     items: [
-      'Door opening time is TBD and entry is subject to venue checks.',
+      EVENT_DOORS_OPEN + ' and entry is subject to venue checks.',
       'Attendees must bring a real ID card for identity proof at the gate if required by event staff.',
       'Capacity by ticket zone is TBA and may be managed by the organizer for safety and operations.',
       'Attendees must follow venue security checks, organizer instructions, and event staff directions.',

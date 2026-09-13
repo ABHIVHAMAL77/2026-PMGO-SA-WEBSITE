@@ -1,6 +1,7 @@
 export type TicketPlanId = 'general-day-pass';
 
 export const DAILY_TICKET_CAPACITY = 620;
+export const EVENT_DOORS_OPEN = 'Doors open 3:00 PM onwards';
 
 export type TicketPlan = {
   id: TicketPlanId;
@@ -25,6 +26,7 @@ export const ticketPlans: TicketPlan[] = [
       'Single-day entry',
       'General audience access',
       '13% VAT added at checkout',
+      EVENT_DOORS_OPEN,
       'Identity proof may be required at gate',
     ],
   },

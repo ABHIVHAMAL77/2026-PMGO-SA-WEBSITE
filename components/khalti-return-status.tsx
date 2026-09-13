@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Loader2, Ticket, TriangleAlert } from 'lucide-react';
 
+import { EVENT_DOORS_OPEN } from '@/lib/tickets';
+
 type LookupResponse = {
   amount?: unknown;
   error?: string;
@@ -33,7 +35,7 @@ const getStatusState = (response: LookupResponse): StatusState => {
   if (status.toLowerCase() === 'completed') {
     return {
       amount: formatAmount(response.amount),
-      message: 'Your Khalti payment has been received for ticket processing.',
+      message: `Your Khalti payment has been received for ticket processing. ${EVENT_DOORS_OPEN}.`,
       status: 'success',
       title: 'Payment Completed',
       transactionId:

@@ -1,4 +1,8 @@
-import { DAILY_TICKET_CAPACITY, getTicketPlan } from '@/lib/tickets';
+import {
+  DAILY_TICKET_CAPACITY,
+  EVENT_DOORS_OPEN,
+  getTicketPlan,
+} from '@/lib/tickets';
 import {
   getKhaltiSecretKey,
   khaltiApiBaseUrl,
@@ -254,6 +258,7 @@ export async function POST(request: Request) {
       event: 'Checkout Started',
       eventDate,
       eventDateLabel,
+      eventDoorsOpen: EVENT_DOORS_OPEN,
       orderId,
       pidx: payload.pidx ?? '',
       quantity,

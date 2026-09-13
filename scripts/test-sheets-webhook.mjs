@@ -47,6 +47,8 @@ const testName = process.env.TEST_TICKET_NAME ?? 'Website Test Buyer';
 const testPhone = process.env.TEST_TICKET_PHONE ?? '9800000000';
 const testDate = process.env.TEST_TICKET_DATE ?? '2026-09-16';
 const testDateLabel = process.env.TEST_TICKET_DATE_LABEL ?? '16 Sep 2026';
+const testDoorsOpen =
+  process.env.TEST_TICKET_DOORS_OPEN ?? 'Doors open 3:00 PM onwards';
 const testQuantity = Math.min(
   10,
   Math.max(1, Number(process.env.TEST_TICKET_QUANTITY ?? '1') || 1),
@@ -84,6 +86,7 @@ const ticketPayload = {
   buyerEmail: testEmail,
   buyerName: testName,
   buyerPhone: testPhone,
+  eventDoorsOpen: testDoorsOpen,
   event: 'Checkout Started',
   eventDate: testDate,
   eventDateLabel: testDateLabel,
