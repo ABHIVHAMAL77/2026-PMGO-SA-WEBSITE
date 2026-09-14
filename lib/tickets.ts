@@ -25,7 +25,6 @@ export const ticketPlans: TicketPlan[] = [
     details: [
       'Single-day entry',
       'General audience access',
-      '13% VAT added at checkout',
       EVENT_DOORS_OPEN,
       'Identity proof may be required at gate',
     ],

@@ -186,7 +186,7 @@ export async function POST(request: Request) {
           amount_breakdown: [
             {
               amount,
-              label: `${ticket.name} - ${eventDateLabel} x${quantity} incl. VAT`,
+              label: `${ticket.name} - ${eventDateLabel} x${quantity}`,
             },
           ],
           customer_info: {

@@ -179,7 +179,7 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
               NPR 400
             </p>
             <p className="mt-2 text-sm font-black uppercase tracking-[0.14em] text-cyan-100/62">
-              + 13% VAT per ticket
+              Per ticket
             </p>
           </div>
 
@@ -239,9 +239,6 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
               </p>
               <p className="text-2xl font-black">
                 NPR {total.toLocaleString('en-US')}
-              </p>
-              <p className="text-xs font-black uppercase tracking-[0.08em] opacity-70">
-                Incl. NPR {vatTotal.toLocaleString('en-US')} VAT
               </p>
             </div>
           </div>

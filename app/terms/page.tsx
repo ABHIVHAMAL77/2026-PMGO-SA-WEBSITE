@@ -50,7 +50,7 @@ const termSections = [
     items: [
       'General Pass is valid for one selected event day only.',
       EVENT_DOORS_OPEN + '.',
-      'Ticket price is NPR 400 per ticket, with 13% VAT added at checkout.',
+      'Ticket price is NPR 400 per ticket.',
       'Each attendee must hold a valid General Pass for the day they attend.',
       'Each ticket order must include attendee name, email, and WhatsApp details for every ticket quantity.',
       'VIP and seasonal passes are not available for this event ticketing phase.',
