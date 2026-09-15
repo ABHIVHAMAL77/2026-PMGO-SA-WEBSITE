@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, SyntheticEvent, useState } from 'react';
+import { ChangeEvent, SyntheticEvent, useEffect, useState } from 'react';
 import {
   CheckCircle2,
   Loader2,
@@ -14,7 +14,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { EVENT_DOORS_OPEN, isTicketDateSoldOut } from '@/lib/tickets';
+import {
+  EVENT_DOORS_OPEN,
+  eventDateOptions,
+  isTicketDateSoldOut,
+} from '@/lib/tickets';
 import type { TicketPlan } from '@/lib/tickets';
 
 type BuyerDetails = {
@@ -28,18 +32,22 @@ type CheckoutResponse = {
   paymentUrl?: string;
 };
 
+type DateAvailability = {
+  remaining: number | null;
+  sold: number;
+  soldOut: boolean;
+};
+
+type CapacityResponse = {
+  dates?: Array<DateAvailability & { eventDate: string }>;
+  error?: string;
+};
+
 const initialBuyer: BuyerDetails = {
   email: '',
   name: '',
   phone: '',
 };
-
-const eventDates = [
-  { label: '16 Sep 2026', value: '2026-09-16' },
-  { label: '17 Sep 2026', value: '2026-09-17' },
-  { label: '18 Sep 2026', value: '2026-09-18' },
-  { label: '19 Sep 2026', value: '2026-09-19' },
-];
 
 const clampQuantity = (value: number) => Math.min(10, Math.max(1, value));
 
@@ -47,11 +55,14 @@ const createEmptyAttendees = (count: number) =>
   Array.from({ length: count }, () => ({ ...initialBuyer }));
 
 export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
-  const [selectedDate, setSelectedDate] = useState(eventDates[0].value);
+  const [selectedDate, setSelectedDate] = useState(eventDateOptions[0].value);
   const [quantity, setQuantity] = useState(1);
   const [attendees, setAttendees] = useState<BuyerDetails[]>(
     createEmptyAttendees(1),
   );
+  const [availabilityByDate, setAvailabilityByDate] = useState<
+    Record<string, DateAvailability>
+  >({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -61,9 +72,56 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
     ? Math.round(baseTotal * selectedTicket.vatRate)
     : 0;
   const total = baseTotal + vatTotal;
-  const selectedDateLabel = eventDates.find(
+  const selectedDateLabel = eventDateOptions.find(
     (date) => date.value === selectedDate,
   )?.label;
+  const selectedAvailability = availabilityByDate[selectedDate];
+  const selectedDateSoldOut =
+    isTicketDateSoldOut(selectedDate) || Boolean(selectedAvailability?.soldOut);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAvailability = async () => {
+      try {
+        const response = await fetch('/api/tickets/capacity', {
+          cache: 'no-store',
+        });
+        const payload = (await response
+          .json()
+          .catch(() => ({}))) as CapacityResponse;
+
+        if (!response.ok || !payload.dates) {
+          return;
+        }
+
+        if (!cancelled) {
+          setAvailabilityByDate(
+            Object.fromEntries(
+              payload.dates.map((date) => [
+                date.eventDate,
+                {
+                  remaining: date.remaining,
+                  sold: date.sold,
+                  soldOut: date.soldOut,
+                },
+              ]),
+            ),
+          );
+        }
+      } catch {
+        // The server still enforces capacity when payment starts.
+      }
+    };
+
+    loadAvailability();
+    const intervalId = window.setInterval(loadAvailability, 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   const updateAttendee =
     (index: number, field: keyof BuyerDetails) =>
@@ -104,7 +162,7 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
       return;
     }
 
-    if (isTicketDateSoldOut(selectedDate)) {
+    if (selectedDateSoldOut) {
       setError(`${selectedDateLabel} is sold out.`);
       return;
     }
@@ -258,8 +316,11 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
             role="radiogroup"
             aria-label="Choose event date"
           >
-            {eventDates.map((date) => {
-              const soldOut = isTicketDateSoldOut(date.value);
+            {eventDateOptions.map((date) => {
+              const availability = availabilityByDate[date.value];
+              const soldOut =
+                isTicketDateSoldOut(date.value) ||
+                Boolean(availability?.soldOut);
 
               return (
                 <button
@@ -438,7 +499,7 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
 
         <Button
           type="submit"
-          disabled={loading}
+          disabled={loading || selectedDateSoldOut}
           className="mt-5 h-12 w-full rounded-md bg-red-500 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-red-400"
         >
           {loading ? (
@@ -446,7 +507,11 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
           ) : (
             <Ticket className="size-4" aria-hidden="true" />
           )}
-          {loading ? 'Starting Khalti' : 'Pay with Khalti'}
+          {loading
+            ? 'Starting Khalti'
+            : selectedDateSoldOut
+              ? 'Sold out'
+              : 'Pay with Khalti'}
         </Button>
       </form>
     </div>

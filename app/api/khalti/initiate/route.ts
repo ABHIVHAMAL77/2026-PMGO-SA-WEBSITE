@@ -1,6 +1,7 @@
 import {
   DAILY_TICKET_CAPACITY,
   EVENT_DOORS_OPEN,
+  eventDateOptions,
   getTicketPlan,
   isTicketDateSoldOut,
 } from '@/lib/tickets';
@@ -26,12 +27,9 @@ type InitiateRequestBody = {
   ticketId?: string;
 };
 
-const validEventDates = new Map([
-  ['2026-09-16', '16 Sep 2026'],
-  ['2026-09-17', '17 Sep 2026'],
-  ['2026-09-18', '18 Sep 2026'],
-  ['2026-09-19', '19 Sep 2026'],
-]);
+const validEventDates = new Map(
+  eventDateOptions.map((eventDate) => [eventDate.value, eventDate.label]),
+);
 
 const getSiteOrigin = (request: Request) => {
   const configuredOrigin =
@@ -146,26 +144,33 @@ export async function POST(request: Request) {
     );
   }
 
-  if (capacityStatus) {
-    const remaining =
-      capacityStatus.remaining ??
-      DAILY_TICKET_CAPACITY - capacityStatus.sold;
+  if (!capacityStatus) {
+    return Response.json(
+      {
+        error:
+          'Ticket availability could not be checked right now. Please try again in a moment.',
+      },
+      { status: 503 },
+    );
+  }
 
-    if (remaining <= 0) {
-      return Response.json(
-        { error: `${eventDateLabel} is sold out.` },
-        { status: 409 },
-      );
-    }
+  const remaining =
+    capacityStatus.remaining ?? DAILY_TICKET_CAPACITY - capacityStatus.sold;
 
-    if (quantity > remaining) {
-      return Response.json(
-        {
-          error: `Only ${remaining} ticket${remaining === 1 ? '' : 's'} left for ${eventDateLabel}.`,
-        },
-        { status: 409 },
-      );
-    }
+  if (remaining <= 0) {
+    return Response.json(
+      { error: `${eventDateLabel} is sold out.` },
+      { status: 409 },
+    );
+  }
+
+  if (quantity > remaining) {
+    return Response.json(
+      {
+        error: `Only ${remaining} ticket${remaining === 1 ? '' : 's'} left for ${eventDateLabel}.`,
+      },
+      { status: 409 },
+    );
   }
 
   const baseAmountNpr = ticket.amountNpr * quantity;
