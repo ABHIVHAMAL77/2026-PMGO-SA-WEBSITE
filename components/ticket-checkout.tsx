@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { EVENT_DOORS_OPEN } from '@/lib/tickets';
+import { EVENT_DOORS_OPEN, isTicketDateSoldOut } from '@/lib/tickets';
 import type { TicketPlan } from '@/lib/tickets';
 
 type BuyerDetails = {
@@ -101,6 +101,11 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
 
     if (!selectedTicket) {
       setError('Please choose a pass first.');
+      return;
+    }
+
+    if (isTicketDateSoldOut(selectedDate)) {
+      setError(`${selectedDateLabel} is sold out.`);
       return;
     }
 
@@ -253,26 +258,38 @@ export function TicketCheckout({ tickets }: { tickets: TicketPlan[] }) {
             role="radiogroup"
             aria-label="Choose event date"
           >
-            {eventDates.map((date) => (
-              <button
-                key={date.value}
-                type="button"
-                role="radio"
-                aria-checked={selectedDate === date.value}
-                onClick={() => {
-                  setSelectedDate(date.value);
-                  setError('');
-                }}
-                className={cn(
-                  'min-h-14 rounded-md border px-3 text-sm font-black uppercase tracking-[0.06em] transition',
-                  selectedDate === date.value
-                    ? 'border-cyan-200 bg-cyan-200 text-[#071123] shadow-[0_16px_40px_rgba(34,211,238,0.22)]'
-                    : 'border-white/14 bg-white/[0.07] text-white hover:border-cyan-100/70 hover:bg-white/[0.1]',
-                )}
-              >
-                {date.label}
-              </button>
-            ))}
+            {eventDates.map((date) => {
+              const soldOut = isTicketDateSoldOut(date.value);
+
+              return (
+                <button
+                  key={date.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={selectedDate === date.value}
+                  disabled={soldOut}
+                  onClick={() => {
+                    setSelectedDate(date.value);
+                    setError('');
+                  }}
+                  className={cn(
+                    'min-h-14 rounded-md border px-3 text-sm font-black uppercase tracking-[0.06em] transition',
+                    soldOut
+                      ? 'cursor-not-allowed border-red-300/24 bg-red-500/12 text-red-100/70'
+                      : selectedDate === date.value
+                        ? 'border-cyan-200 bg-cyan-200 text-[#071123] shadow-[0_16px_40px_rgba(34,211,238,0.22)]'
+                        : 'border-white/14 bg-white/[0.07] text-white hover:border-cyan-100/70 hover:bg-white/[0.1]',
+                  )}
+                >
+                  <span className="block">{date.label}</span>
+                  {soldOut ? (
+                    <span className="mt-1 block text-[0.62rem] tracking-[0.16em]">
+                      Sold out
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
         </div>
 

@@ -2,6 +2,10 @@ export type TicketPlanId = 'general-day-pass';
 
 export const DAILY_TICKET_CAPACITY = 500;
 export const EVENT_DOORS_OPEN = 'Doors open 3:00 PM onwards';
+export const SOLD_OUT_EVENT_DATES = ['2026-09-19'];
+
+export const isTicketDateSoldOut = (eventDate: string) =>
+  SOLD_OUT_EVENT_DATES.includes(eventDate);
 
 export type TicketPlan = {
   id: TicketPlanId;

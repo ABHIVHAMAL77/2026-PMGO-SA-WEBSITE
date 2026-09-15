@@ -2,6 +2,7 @@ import {
   DAILY_TICKET_CAPACITY,
   EVENT_DOORS_OPEN,
   getTicketPlan,
+  isTicketDateSoldOut,
 } from '@/lib/tickets';
 import {
   getKhaltiSecretKey,
@@ -96,6 +97,13 @@ export async function POST(request: Request) {
     return Response.json(
       { error: 'Please choose a valid event date.' },
       { status: 400 },
+    );
+  }
+
+  if (isTicketDateSoldOut(eventDate)) {
+    return Response.json(
+      { error: `${eventDateLabel} is sold out.` },
+      { status: 409 },
     );
   }
 
